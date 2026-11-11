@@ -1,0 +1,23 @@
+cost_center,cost_center_name,department,game,pool_id
+1001,Star Racer,Live Games,Star Racer,
+1002,Kingdom Clash,Live Games,Kingdom Clash,
+1003,Ocean Tales,Live Games,Ocean Tales,
+1004,Legacy Arcade,Live Games,Legacy Arcade,
+1010,Live Games Art Pool,Live Games,,LIVE_SHARED
+1011,Live Games QA Pool,Live Games,,LIVE_SHARED
+2001,Puzzle Pals,New Games,Puzzle Pals,
+2002,Moon Miner,New Games,Moon Miner,
+2003,Pixel Farm,New Games,Pixel Farm,
+2004,Rune Quest,New Games,Rune Quest,
+2005,Tiny Chef,New Games,Tiny Chef,
+2010,New Games Prototyping,New Games,,NEW_SHARED
+2011,Core Tech New Games,New Games,,CORE_TECH
+3001,Engineering Platform,Engineering,,
+3002,Data & BI,Engineering,,
+3101,Performance Marketing,Marketing,,
+3102,Brand,Marketing,,
+3201,People Ops,People,,
+3202,Talent Acquisition,People,,
+3301,Finance,Operations,,
+3302,Legal,Operations,,
+3303,Facilities,Operations,,

@@ -1,0 +1,10 @@
+account,account_name,account_group
+6100,Salaries,People Costs
+6110,Benefits,People Costs
+6120,Payroll Taxes,People Costs
+6200,Office Rent,Facilities
+6300,Cloud Hosting,IT Infra
+6310,Software Licenses,IT Infra
+6400,Travel,Administrative
+6410,Professional Services,Administrative
+6900,Depreciation,Depreciation

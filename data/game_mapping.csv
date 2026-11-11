@@ -1,0 +1,17 @@
+game_group,category,bearing_group,side,start_date,end_date
+Star Racer ,Live Games,,BR Games,2024-01-01,9999-12-31
+Kingdom Clash,Live Games,,BR Games,2024-01-01,9999-12-31
+Ocean Tales,Live Games,,BR Games,2024-01-01,9999-12-31
+Legacy Arcade,Live Games,,By entity,2024-01-01,9999-12-31
+Puzzle Pals,New Games,,BR Games,2025-01-01,2026-02-28
+Puzzle Pals,New Games,,US Games,2026-03-01,9999-12-31
+Moon Miner,New Games,,US Games,2026-02-01,9999-12-31
+Pixel Farm,New Games,,US Games,2024-01-01,9999-12-31
+Rune Quest,New Games,,US Games,2024-01-01,9999-12-31
+Tiny Chef,New Games,,BR Games,2024-01-01,9999-12-31
+live_br,Live Games,BR,BR Games,2024-01-01,9999-12-31
+live_others,Live Games,BR,BR Games,2024-01-01,9999-12-31
+new_br,New Games,BR,BR Games,2024-01-01,9999-12-31
+new_us,New Games,US,US Games,2024-01-01,9999-12-31
+new_fi,New Games,FI,US Games,2024-01-01,9999-12-31
+new_others,New Games,Others,US Games,2024-01-01,9999-12-31

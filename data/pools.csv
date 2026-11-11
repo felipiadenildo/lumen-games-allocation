@@ -1,0 +1,13 @@
+pool_id,game
+LIVE_SHARED,Star Racer
+LIVE_SHARED,Kingdom Clash
+LIVE_SHARED,Ocean Tales
+LIVE_SHARED,Legacy Arcade
+NEW_SHARED,Puzzle Pals
+NEW_SHARED,Moon Miner
+NEW_SHARED,Pixel Farm
+NEW_SHARED,Rune Quest
+NEW_SHARED,Tiny Chef
+CORE_TECH,Moon Miner
+CORE_TECH,Pixel Farm
+CORE_TECH,Rune Quest
