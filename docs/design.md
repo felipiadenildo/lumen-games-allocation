@@ -44,7 +44,7 @@
 
 ### R11. Reconciliation and summary (from "What to deliver", items 2 and 3)
 - **Rule:** ledger total = out of scope + allocated + unallocated, for each month and in total. The summary shows the amount by booked group × side, for each month and for the quarter. The quarter is the sum of the months.
-- **Check:** the equation holds with abs(difference) < 0.005. Summary total = allocated total.
+- **Check:** the equation holds with abs(difference) < 0.005. Summary total = allocated + unallocated (the in-scope total).
 
 ## Open questions
 
@@ -59,3 +59,30 @@
 | Q7 | Rounding: when to round to cents. | Keep full precision; round only in the output files. Reconciliation passes when abs(difference) < 0.005. | no |
 | Q8 | Text keys that almost match (spaces). | Trim only the name columns used to match tables; the run log lists every value changed. | yes, as an issue |
 | Q9 | Is the quarter exactly the months in the ledger? | Yes. The ledger covers 2026-01 to 2026-03, the first quarter of 2026 (check 11). The pipeline keeps the check. | no |
+
+
+## Decisions
+
+| # | Decision | Why |
+|---|---|---|
+| 1 | **DuckDB SQL** for the pipeline. Python only runs the SQL, the checks and the output; it never changes the data. | The rules are joins and sums, and SQL reads close to them. |
+| 2 | **One SQL file per step** in `sql/`, run in name order by `run.py`. | A rule change is a change in one file. |
+| 3 | **One allocation table for every ledger line**, with `status` (allocated, unallocated, out_of_scope) and `reason`. | Every dollar is in one place; the reconciliation is one sum by status. |
+| 4 | **A blocking check stops the run**: it exits with an error and deletes `allocation.csv` and `summary.csv`. `checks.csv` is always written to `output/`. | No wrong or stale number stays in `output/`. |
+| 5 | **Line amounts are read as `DECIMAL(18, 2)`; shares are DOUBLE.** A piece (amount × share) keeps full precision and is cast to `DECIMAL(18, 2)` only when written; the checks compare at full precision with the Q7 tolerance. A rounded piece may differ from its line by a cent; that is accepted, not adjusted, and the README says so. All files are read as text and cast explicitly in the load step. Output is sorted by `line_id`, then game or bucket. | Exact amounts in, cents out; the same input always gives the same file, so a change shows as a clean diff. |
+| 6 | **No test framework.** | The checks run with every run; worked examples are compared once in F5. |
+| 7 | **Checks are SQL queries in `sql/checks/`**, one per file, each returning the failing rows. The file name starts with `block_` or `warn_`. If a failure means the pipeline is wrong, it blocks; if it means the data is incomplete, it warns. | The level is visible in the file name; adding a check is adding a file. |
+| 8 | **The cleaning step trims names in SQL** and keeps a table of every value it changed (before, after). A `warn_` check reports it (Q8). | No value changes silently. |
+
+Notes:
+- The allocation table has one row per piece of a ledger line. A game or bucket with no mapping row is a piece with
+  status `unallocated` and its game or bucket filled (the `live_fi` case). Only a line that can't be split at all has
+  one row with no game or bucket.
+- Every row has a share; a line that isn't split has one row with share 1. So the shares of every line add up to 1,
+  and its rows add up to its amount.
+- The summary leaves out `out_of_scope` and shows `Unallocated` next to BR Games and US Games, by booked group, for
+  each month and the quarter.
+- Blocking checks: duplicate keys (Q2), two valid mapping rows (Q3), shares of a line not adding up to 1, reconciliation
+  outside the tolerance (R11). Warnings: unallocated dollars (Q1), trimmed names (Q8). The full list comes with the
+  output schema.
+- The notebook in `notebooks/` was exploration only; the pipeline doesn't use it.
