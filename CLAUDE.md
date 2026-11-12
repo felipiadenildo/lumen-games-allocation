@@ -48,7 +48,11 @@ No pipeline code before F3 is agreed.
 - F7 Deliver: export the conversation, final clean-checkout test, zip with `.git`.
 
 ## Prompt tags
-`[R]` research · `[D]` decision · `[V]` validation · `[W]` assisted writing · `[A]` automation.
+`[R]` research
+`[D]` decision
+`[V]` validation
+`[W]` assisted writing
+`[A]` automation.
 "My hypothesis: ..." → challenge it before giving a position.
 
 ## Documentation style

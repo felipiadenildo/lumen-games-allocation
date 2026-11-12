@@ -1,0 +1,5 @@
+# Design
+
+## Rules
+
+## Open questions
