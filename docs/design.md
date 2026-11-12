@@ -54,8 +54,8 @@
 | Q2 | An input table has duplicate keys at the grain the BRIEF states (including both headcount files and line_id in the ledger). | Stop the run: a join would multiply dollars. | if it happens |
 | Q3 | Two mapping rows are valid for the same game or bucket and month. | Stop the run: the side is ambiguous. | if it happens |
 | Q4 | "The month's employees" for indirect shares: whole company, or only the booking entity's employees? | All employees of the company that month, all entities and both categories. | yes |
-| Q5 | A bucket row says By entity. | None yet; check in F2. | if it happens |
+| Q5 | A bucket row says By entity. | Does not happen in this data (check 11). If it appears, it is a Q1 case: unallocated with a reason, the run warns. | if it happens |
 | Q6 | Credits are split with the same shares, so destinations get negative amounts. | Yes, same shares; credits are not netted before allocating. | no |
 | Q7 | Rounding: when to round to cents. | Keep full precision; round only in the output files. Reconciliation passes when abs(difference) < 0.005. | no |
-| Q8 | Text keys that almost match (spaces, case). | Trim and log every fix; never change a value silently. | yes, as an issue |
-| Q9 | Is the quarter exactly the months in the ledger? | Yes; check that they are three consecutive months of one quarter. | no |
+| Q8 | Text keys that almost match (spaces). | Trim only the name columns used to match tables; the run log lists every value changed. | yes, as an issue |
+| Q9 | Is the quarter exactly the months in the ledger? | Yes. The ledger covers 2026-01 to 2026-03, the first quarter of 2026 (check 11). The pipeline keeps the check. | no |
