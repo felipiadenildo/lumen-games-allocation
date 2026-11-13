@@ -20,6 +20,12 @@ RESULTS = ["allocation", "summary", "reconciliation"]
 
 con = duckdb.connect()
 
+# Remove the previous results first, so a run that stops on an error or a block_ check
+# leaves no stale number in output/ (decision 4).
+OUTPUT.mkdir(exist_ok=True)
+for name in RESULTS + ["checks"]:
+    (OUTPUT / f"{name}.csv").unlink(missing_ok=True)
+
 # 1. The steps, in name order: 01_load.sql, 02_clean.sql, ...
 for step in sorted(SQL.glob("*.sql")):
     print(f"step  {step.name}")
@@ -29,7 +35,7 @@ for step in sorted(SQL.glob("*.sql")):
 con.execute("""
     CREATE TABLE checks ("check" VARCHAR, level VARCHAR, result VARCHAR, rows INTEGER, amount_usd DECIMAL(18, 2))
 """)
-blocked = False
+failed = []
 
 for check in sorted(CHECKS.glob("*.sql")):
     name = check.stem
@@ -49,7 +55,7 @@ for check in sorted(CHECKS.glob("*.sql")):
         result = "warn"
     else:
         result = "fail"
-        blocked = True
+        failed.append(name)
 
     con.execute("INSERT INTO checks VALUES (?, ?, ?, ?, ?)", [name, level, result, rows, amount])
     print(f"check {name}: {result}, {rows} rows")
@@ -60,13 +66,10 @@ for check in sorted(CHECKS.glob("*.sql")):
         print(con.sql(f"SELECT * FROM found {limit}"))
 
 # 3. The output files. checks.csv is always written.
-OUTPUT.mkdir(exist_ok=True)
 con.execute(f"COPY checks TO '{OUTPUT / 'checks.csv'}' (HEADER)")
 
-if blocked:
-    for name in RESULTS:
-        (OUTPUT / f"{name}.csv").unlink(missing_ok=True)
-    print("A block_ check failed: results deleted, see output/checks.csv")
+if failed:
+    print(f"Blocked by: {', '.join(failed)}. No results written; see output/checks.csv")
     sys.exit(1)
 
 for name in RESULTS:

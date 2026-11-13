@@ -8,3 +8,4 @@ JOIN game_mapping m
     ON CAST(l.month || '-01' AS DATE) BETWEEN m.start_date AND m.end_date
 GROUP BY m.game_group, l.month
 HAVING COUNT(*) > 1
+ORDER BY m.game_group, l.month
