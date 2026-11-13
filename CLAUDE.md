@@ -8,16 +8,23 @@ Existing:
 - `BRIEF.md` — problem statement (read-only input)
 - `data/` — source CSVs (read-only input)
 
-Planned:
-- `docs/design.md` — rules as testable statements, open questions, design (F1, F3)
+- `docs/design.md` — rules, open questions, decisions, output, line path, worked examples
 - `docs/data-issues.md` — every data issue; dollar impact filled by the pipeline (F2, F5)
-- `docs/ai-usage.md` — record of AI use (F6)
+- `notebooks/` — exploration and worked examples (pandas); not used by the pipeline
+- `run.py` — runs the SQL steps, the checks and writes `output/`
+- `sql/` — one SQL file per step, run in name order; `sql/checks/` — one check per file
+
+Planned:
 - `output/` — pipeline results, committed as part of the delivery
-- Source code — location decided in F3
+- `docs/ai-usage.md` — record of AI use (F6)
 - `README.md`, Tax note (F6)
 
 ## How to run and check
-To be added in F4.
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+python run.py          # from the repo root
+```
 
 ## Working rules
 - Claude is a technical pair and reviewer, not the executor. The user makes the decisions and writes the core allocation logic.
