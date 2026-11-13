@@ -16,7 +16,7 @@ CHECKS = SQL / "checks"
 OUTPUT = Path("output")
 
 # The result files. They are deleted when a block_ check fails, so no stale number stays in output/.
-RESULTS = ["allocation", "summary", "reconciliation"]
+RESULTS = ["allocation", "summary", "summary_by_entity", "reconciliation"]
 
 con = duckdb.connect()
 

@@ -1,4 +1,4 @@
--- The three result files as they are written: amounts rounded to cents only here (Q07, D05),
+-- The result files as they are written: amounts rounded to cents only here (Q07, D05),
 -- rows always in the same order. run.py copies these tables to output/ when no block_ check fails.
 
 CREATE OR REPLACE TABLE output_allocation AS
@@ -17,6 +17,18 @@ SELECT
     CAST(total AS DECIMAL(18, 2)) AS total
 FROM summary
 ORDER BY period, booked_group;
+
+CREATE OR REPLACE TABLE output_summary_by_entity AS
+SELECT
+    period,
+    booked_entity,
+    booked_group,
+    CAST(br_games AS DECIMAL(18, 2)) AS br_games,
+    CAST(us_games AS DECIMAL(18, 2)) AS us_games,
+    CAST(unallocated AS DECIMAL(18, 2)) AS unallocated,
+    CAST(total AS DECIMAL(18, 2)) AS total
+FROM summary_by_entity
+ORDER BY period, booked_entity;
 
 CREATE OR REPLACE TABLE output_reconciliation AS
 SELECT

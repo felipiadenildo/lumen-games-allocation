@@ -8,16 +8,17 @@ How the allocation works: what the BRIEF asks, the data, the decisions, the outp
 |---|---|---|
 | [IDs](#ids) | how rules, questions, decisions and the rest are numbered | |
 | [Rules](#rules) | what the BRIEF asks, as testable statements (R01–R11) | F1 |
-| [Data model](#data-model) | the eight input files and how they join | F2 |
 | [Open questions](#open-questions) | what the BRIEF leaves open, and the assumption I use (Q01–Q09) | F1, F2 |
+| [Data model](#data-model) | the eight input files and how they join | F2 |
 | [Decisions](#decisions) | how the pipeline is built, and why (D01–D11) | F3 |
-| [Output](#output) | the four files, their columns, the reasons and the checks | F3 |
+| [Output](#output) | the five files, their columns, the reasons and the checks | F3 |
 | [How a line is allocated](#how-a-line-is-allocated) | the path of one ledger line | F3 |
 | [Worked examples](#worked-examples) | six real lines, computed by hand (W01–W06) | F3 |
 | [Pipeline](#pipeline) | which file does what | F4 |
 | [Validation](#validation) | the pipeline checked from outside (S01–S18) | F5 |
 
-The phases F1–F7 are the steps of the work (phase plan in [`CLAUDE.md`](../CLAUDE.md)).
+Phases: F1 understand the request, F2 understand the data, F3 design, F4 build, F5 validate, F6 communicate, F7 deliver.
+F6 and F7 produce the README, the Tax note and the delivery, not sections here (phase plan in [`CLAUDE.md`](../CLAUDE.md)).
 
 ## IDs
 
@@ -88,72 +89,6 @@ pipeline check covers which rule.
 - **Rule:** ledger total = out of scope + allocated + unallocated, for each month and in total. The summary shows the amount by booked group × side, for each month and for the quarter. The quarter is the sum of the months.
 - **Check:** the equation holds with abs(difference) < 0.005. Summary total = allocated + unallocated (the in-scope total).
 
-## Data model
-
-Eight input files. The ledger is the fact table; the others describe its codes, or give the shares and the sides.
-
-```mermaid
-erDiagram
-    LEDGER {
-        string line_id PK
-        string month
-        string entity FK
-        string account FK
-        string cost_center FK
-        decimal amount_usd
-    }
-    ENTITIES {
-        string entity PK
-        string entity_group
-    }
-    ACCOUNTS {
-        string account PK
-        string account_group
-    }
-    COST_CENTERS {
-        string cost_center PK
-        string department
-        string game
-        string pool_id
-    }
-    POOLS {
-        string pool_id PK
-        string game PK
-    }
-    HEADCOUNT_GAMES {
-        string month PK
-        string game PK
-        double fte
-    }
-    HEADCOUNT_EMPLOYEES {
-        string month PK
-        string employee_id PK
-        string entity FK
-        string category
-    }
-    GAME_MAPPING {
-        string game_group PK
-        date start_date PK
-        date end_date
-        string bearing_group
-        string side
-    }
-    ENTITIES ||--o{ LEDGER : "books"
-    ACCOUNTS ||--o{ LEDGER : "classifies"
-    COST_CENTERS ||--o{ LEDGER : "is charged"
-    COST_CENTERS }o--o{ POOLS : "pool_id"
-    ENTITIES ||--o{ HEADCOUNT_EMPLOYEES : "employs"
-    GAME_MAPPING ||--o{ COST_CENTERS : "game"
-    GAME_MAPPING ||--o{ POOLS : "game"
-    GAME_MAPPING ||--o{ HEADCOUNT_GAMES : "game"
-    GAME_MAPPING }o..o{ HEADCOUNT_EMPLOYEES : "bucket (built from category + entity group)"
-```
-
-- Games and buckets have no table of their own. `game_mapping.csv` holds every game and bucket name, one row per
-  period, and the other files refer to those names.
-- A bucket is not stored anywhere: it is built from the employee's category and their entity's group (R08).
-- Keys are the grain the BRIEF states; `block_duplicate_keys` checks them on every run (Q02).
-
 ## Open questions
 
 | ID | Question | Assumption I use | Tax note? |
@@ -168,6 +103,79 @@ erDiagram
 | Q08 | Text keys that almost match (spaces). | Trim only the name columns used to match tables or compared to a rule's value (`account_group`); the run log lists every value changed. | yes, as an issue |
 | Q09 | Is the quarter exactly the months in the ledger? | Yes. The ledger covers 2026-01 to 2026-03, the first quarter of 2026 (C11). The pipeline keeps the check. | no |
 
+## Data model
+
+Eight input files. The ledger is the fact table; the others describe its codes, or give the shares and the sides.
+
+```mermaid
+erDiagram
+    ledger {
+        string line_id PK
+        string month
+        string entity FK "entities.entity"
+        string account FK "accounts.account"
+        string cost_center FK "cost_centers.cost_center"
+        decimal amount_usd
+    }
+    entities {
+        string entity PK
+        string entity_name
+        string country
+        string entity_group
+    }
+    accounts {
+        string account PK
+        string account_name
+        string account_group
+    }
+    cost_centers {
+        string cost_center PK
+        string cost_center_name
+        string department
+        string game FK "game_mapping.game_group"
+        string pool_id FK "pools.pool_id"
+    }
+    pools {
+        string pool_id PK
+        string game PK, FK "game_mapping.game_group"
+    }
+    headcount_games {
+        string month PK
+        string game PK, FK "game_mapping.game_group"
+        double fte
+    }
+    headcount_employees {
+        string month PK
+        string employee_id PK
+        string entity FK "entities.entity"
+        string category
+    }
+    game_mapping {
+        string game_group PK
+        date start_date PK
+        date end_date
+        string category
+        string bearing_group
+        string side
+    }
+    entities ||--o{ ledger : "entity"
+    accounts ||--o{ ledger : "account"
+    cost_centers ||--o{ ledger : "cost_center"
+    entities ||--o{ headcount_employees : "entity"
+    pools }o--o{ cost_centers : "pool_id"
+    game_mapping ||--o{ cost_centers : "game"
+    game_mapping ||--o{ pools : "game"
+    game_mapping ||--o{ headcount_games : "game"
+    game_mapping }o..o{ headcount_employees : "bucket, built (R08)"
+```
+
+- Each line joins the column named on it; each FK column says, in quotes, the column it refers to. Crow's foot: `||`
+  one, `o{` zero or many. The dotted line is not a column: the bucket is built (below).
+- Games and buckets have no table of their own. `game_mapping.csv` holds every game and bucket name, one row per
+  period, and the other files refer to those names.
+- A bucket is not stored anywhere: it is built from the employee's category and their entity's group (R08).
+- Keys are the grain the BRIEF states; `block_duplicate_keys` checks them on every run (Q02).
+
 ## Decisions
 
 | ID | Decision | Why |
@@ -175,7 +183,7 @@ erDiagram
 | D01 | **DuckDB SQL** for the pipeline. Python only runs the SQL, the checks and the output; it never changes the data. | The rules are joins and sums, and SQL reads close to them. |
 | D02 | **One SQL file per step** in `sql/`, run in name order by `run.py`. | A rule change is a change in one file. |
 | D03 | **One allocation table for every ledger line**, with `status` (`allocated`, `unallocated`, `out_of_scope`) and `reason`. | Every dollar is in one place; the reconciliation is one sum by status. |
-| D04 | **A blocking check stops the run**: it exits with an error and deletes `allocation.csv`, `summary.csv` and `reconciliation.csv`. `checks.csv` is always written to `output/`. If a step stops with an error, `output/` is left empty. | No wrong or stale number stays in `output/`. |
+| D04 | **A blocking check stops the run**: it exits with an error and writes no result file, only `checks.csv`. `checks.csv` is always written to `output/`. If a step stops with an error, `output/` is left empty. | No wrong or stale number stays in `output/`. |
 | D05 | **Line amounts are read as `DECIMAL(18, 2)`; shares are DOUBLE.** A piece (amount × share) keeps full precision and is cast to `DECIMAL(18, 2)` only when written; the checks compare at full precision with the Q07 tolerance. A line's rounded pieces may differ from the line by a few cents (at most 0.02 in this data); that is accepted, not adjusted, and the README says so. All files are read as text and cast explicitly in the load step. Output is sorted by `line_id`, then game or bucket. | Exact amounts in, cents out; the same input always gives the same file, so a change shows as a clean diff. |
 | D06 | **No test framework.** | The checks run with every run; the worked examples are compared with the output in a notebook (see [Validation](#validation)). |
 | D07 | **Checks are SQL queries in `sql/checks/`**, one per file, each returning the failing rows. The file name starts with `block_` or `warn_`. If a failure means the numbers would be wrong or ambiguous (a key or mapping is duplicated, the months are not one quarter, the pipeline lost or created dollars), it blocks. If the dollars are kept but some have no destination, or a value was cleaned, it warns. | The level is visible in the file name; adding a check is adding a file. |
@@ -186,8 +194,8 @@ erDiagram
 
 ## Output
 
-`python run.py` writes four files to `output/`. On a blocking check, only `checks.csv` is written and the other three
-are deleted (D04).
+`python run.py` writes five files to `output/`: `allocation.csv`, `summary.csv`, `summary_by_entity.csv`,
+`reconciliation.csv` and `checks.csv`. On a blocking check, only `checks.csv` is written (D04).
 
 ### allocation.csv
 
@@ -234,8 +242,15 @@ The last two apply to one piece, not to the whole line: the other pieces of the 
 One row per period × booked group: `period, booked_group, br_games, us_games, unallocated, total`. Period is `2026-01`,
 `2026-02`, `2026-03` or `2026-Q1`; the quarter is the sum of the months. `total` is the in-scope amount;
 out-of-scope lines are left out.
-The month and quarter labels in `summary.csv` and `reconciliation.csv` are built from the ledger's months, not
+The month and quarter labels in the summaries and `reconciliation.csv` are built from the ledger's months, not
 written in the code.
+
+### summary_by_entity.csv
+
+The same amounts, one row per period × booked entity: `period, booked_entity, booked_group, br_games, us_games,
+unallocated, total`. The BRIEF asks for the summary by booked group, and also says Tax needs to know, every month, how
+much cost each entity booked and which side bears it; this file answers that. `summary.csv` adds up these rows by
+booked group (LGC and LGK are both in Others).
 
 ### reconciliation.csv
 
@@ -258,7 +273,7 @@ first 10 rows found by any other check.
 | `block_overlapping_mapping` | block | two mapping rows are valid for the same game or bucket and month | R10, Q03 |
 | `block_months_outside_quarter` | block | the ledger months are not the three months of one calendar quarter | Q09 |
 | `block_shares_not_one` | block | the shares of a line don't add up to 1 | R04, R05, R08, D11 |
-| `block_reconciliation` | block | `difference` is not under 0.005, or a summary `total` differs from `in_scope` | R01, R11, Q07 |
+| `block_reconciliation` | block | `difference` is not under 0.005, or the `total` of either summary differs from `in_scope` | R01, R11, Q07 |
 | `block_unmatched_game_names` | block | a game in `pools.csv` or `headcount_games.csv` has no row in `game_mapping.csv`: a misspelled name would drop out of a pool split silently | Q08, S11 |
 | `block_allocated_rows_complete` | block | an allocated row has no game or bucket; has a side other than BR Games or US Games (so By entity never reaches the output); is a direct row whose bearing group isn't its booked group; is a pool piece whose game isn't in that pool; or is an indirect row with no bearing group | R05, R06, R07, R09 |
 | `warn_unallocated` | warn | any row is unallocated | Q01 |
@@ -460,7 +475,7 @@ flowchart TD
     P08 --> P09 & P10
     P09 & P10 --> P11
     P11 --> CK{"sql/checks/<br/>any block_ fails?"}
-    CK -- no --> OUT[("output/<br/>allocation · summary<br/>reconciliation · checks")]
+    CK -- no --> OUT[("output/<br/>allocation · summary<br/>summary_by_entity<br/>reconciliation · checks")]
     CK -- yes --> STOP["exit 1<br/>only checks.csv"]
 
     classDef step fill:#dbe8fb,stroke:#2f62b0,color:#0e2a52
@@ -484,14 +499,15 @@ the previous results, so a step that stops with an error leaves `output/` empty 
 | `06_indirect.sql` | `employee_buckets`, `bucket_shares`, `pieces_indirect` | R08, Q04 |
 | `07_mapping.sql` | `pieces`, `pieces_mapped`: bearing group, side and reason of every piece | R06, R07, R09, R10, Q05 |
 | `08_allocation.sql` | `allocation`: every ledger line, one row per piece | D03, D09, D11 |
-| `09_summary.sql` | `summary` | R11 |
+| `09_summary.sql` | `summary_by_entity`, then `summary` from it | R11 |
 | `10_reconciliation.sql` | `reconciliation` | R01, R11 |
-| `11_output.sql` | the three tables as written: rounded and sorted | Q07, D05 |
+| `11_output.sql` | the result tables as written: rounded and sorted | Q07, D05 |
 | `sql/checks/*.sql` | one query per check; the rows it returns are the problem | D07 |
 | `run.py` | runs everything above and writes `output/`; clears old results first | D01, D02, D04 |
 
 The run happens in memory. To look at any table after a run: `python -i run.py`, then for example
-`con.sql("SELECT * FROM lines WHERE line_id = 'L00169'").show()`.
+`con.sql("SELECT * FROM lines WHERE line_id = 'L00169'").show()`; or the **Look inside** section of
+[`notebooks/04-results.ipynb`](../notebooks/04-results.ipynb), which also follows one line from start to end.
 
 ## Validation
 
