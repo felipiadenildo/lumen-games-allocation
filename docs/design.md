@@ -53,7 +53,7 @@
 | Q1 | A line can't be allocated: its account, entity or cost center is missing from its lookup table; its department is not in R3; a direct cost center has both game and pool_id, or neither; a game or bucket has no mapping row valid that month; a pool or month has nothing to split by; a bucket row has a blank bearing group. | Unallocated with a reason; the dollars stay visible. The run continues and warns. An employee whose entity is missing stays in the headcount; their bucket has no mapping row, so that share is unallocated. | yes |
 | Q2 | An input table has duplicate keys at the grain the BRIEF states (including both headcount files and line_id in the ledger). | Stop the run: a join would multiply dollars. | if it happens |
 | Q3 | Two mapping rows are valid for the same game or bucket and month. | Stop the run: the side is ambiguous. | if it happens |
-| Q4 | "The month's employees" for indirect shares: whole company, or only the booking entity's employees? | All employees of the company that month, all entities and both categories. | yes |
+| Q4 | "The month's employees" for indirect shares: whole company, or only the booking entity's employees? | All employees of the company that month, all entities and both categories. Reading it as the booking entity's employees only would change the quarter by about −180,980 USD for BR Games, +188,845 for US Games and −7,865 unallocated; the three net to zero (Validation, B7). | yes |
 | Q5 | A bucket row says By entity. | Does not happen in this data (check 11). If it appears, it is a Q1 case: unallocated with a reason, the run warns. | if it happens |
 | Q6 | Credits are split with the same shares, so destinations get negative amounts. | Yes, same shares; credits are not netted before allocating. | no |
 | Q7 | Rounding: when to round to cents. | Keep full precision; round only in the output files. Reconciliation passes when abs(difference) < 0.005. | no |
@@ -162,6 +162,7 @@ first 10 rows found by any other check.
 | `block_months_outside_quarter` | block | the ledger months are not the three months of one calendar quarter | Q9 |
 | `block_shares_not_one` | block | the shares of a line don't add up to 1 | R4, Notes |
 | `block_reconciliation` | block | `difference` is not under 0.005, or a summary `total` differs from `in_scope` | R1, R11 |
+| `block_unmatched_game_names` | block | a game in `pools.csv` or `headcount_games.csv` has no row in `game_mapping.csv`: a misspelled name would drop out of a pool split silently | Q8, adversarial review |
 | `block_allocated_rows_complete` | block | an allocated row has no game or bucket; has a side other than BR Games or US Games (so By entity never reaches the output); is a direct row whose bearing group isn't its booked group; is a pool piece whose game isn't in that pool; or is an indirect row with no bearing group | R5, R6, R7, R9 |
 | `warn_unallocated` | warn | any row is unallocated | Q1 |
 | `warn_trimmed_values` | warn | the cleaning step changed any value | Q8 |
@@ -286,7 +287,7 @@ Two notebooks check the pipeline from outside, without changing it:
 - [`notebooks/02-worked-examples.ipynb`](../notebooks/02-worked-examples.ipynb) recomputes the six worked examples in
   pandas and compares all 21 rows with `output/allocation.csv`: same pieces, amounts to the cent, bearing group and
   side.
-- [`notebooks/03-scenarios.ipynb`](../notebooks/03-scenarios.ipynb) runs 16 scenarios. Each one copies the project to
+- [`notebooks/03-scenarios.ipynb`](../notebooks/03-scenarios.ipynb) runs 18 scenarios. Each one copies the project to
   a temporary folder, makes one change and runs the pipeline there. The expected result is written before the run.
 
 | # | Change | Expected | Result |
@@ -301,12 +302,14 @@ Two notebooks check the pipeline from outside, without changing it:
 | A8 | A pool with no FTE in a month | its in-scope lines: one row each, `nothing_to_split` | as expected |
 | A9 | An employee with an unknown entity | `live_unknown` pieces, `no_mapping_row`; reconciles | as expected |
 | A10 | A direct cost center with a game and a pool | its lines: `bad_cost_center` | as expected |
+| A11 | A misspelled game in `headcount_games.csv` | `block_unmatched_game_names` fails, only `checks.csv` left | as expected |
 | B1 | "Cost center 3999 is Marketing" (data only) | L00169 allocated; nothing unallocated in February | as expected |
 | B2 | "Add the mapping row for live_fi" (data only) | nothing unallocated in March | as expected |
 | B3 | "Puzzle Pals moved in February" (data only) | its February dollars move to US Games | as expected |
 | B4 | "Exclude account group Administrative" (`03_lines.sql`, two lines) | out of scope grows by the Administrative dollars; reconciles | as expected |
 | B5 | "A new game with its own cost center" (data only) | the line goes 100% to the new game | as expected |
 | B6 | A live edit breaks the pool split (`05_direct_pool.sql`) | `block_shares_not_one` fails and is named in the last line | as expected |
+| B7 | Q4 read as "the booking entity's employees only" (`06_indirect.sql`) | indirect costs stay in their booked group; reconciles | as expected: in the quarter about −180,980 BR Games, +188,845 US Games, −7,865 unallocated; they net to zero |
 
 Two expectations were wrong the first time, not the pipeline: A8 forgot that a Depreciation line on the pool stays out
 of scope, and B4 summed rounded pieces instead of line amounts.
