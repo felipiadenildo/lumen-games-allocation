@@ -1,4 +1,4 @@
--- Load every input file as text, then cast only the numbers and dates (decision 5).
+-- Load every input file as text, then cast only the numbers and dates (D05).
 -- Names are not changed here: the cleaning step trims them and logs each change.
 
 CREATE OR REPLACE TABLE ledger AS

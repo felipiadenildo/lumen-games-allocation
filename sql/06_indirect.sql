@@ -1,7 +1,7 @@
 -- Indirect cost: split across buckets by each bucket's share of the month's employees,
--- all entities and both categories (R8, Q4).
+-- all entities and both categories (R08, Q04).
 -- Bucket = first word of the category + entity group, in lower case (live_br, new_fi, ...).
--- An employee whose entity is missing goes to live_unknown or new_unknown (Notes).
+-- An employee whose entity is missing goes to live_unknown or new_unknown (D10).
 
 CREATE OR REPLACE TABLE employee_buckets AS
 SELECT

@@ -8,14 +8,14 @@ Existing:
 - `BRIEF.md` — problem statement (read-only input)
 - `data/` — source CSVs (read-only input)
 
-- `docs/design.md` — rules, open questions, decisions, output, line path, worked examples
+- `docs/design.md` — rules, data model, open questions, decisions, output, line path, worked examples, pipeline, validation
 - `docs/data-issues.md` — every data issue; dollar impact filled by the pipeline (F2, F5)
-- `notebooks/` — exploration and worked examples (pandas); not used by the pipeline
+- `notebooks/` — exploration, worked examples and scenarios (pandas); not used by the pipeline
+- `output/` — pipeline results, committed as part of the delivery
 - `run.py` — runs the SQL steps, the checks and writes `output/`
 - `sql/` — one SQL file per step, run in name order; `sql/checks/` — one check per file
 
 Planned:
-- `output/` — pipeline results, committed as part of the delivery
 - `docs/ai-usage.md` — record of AI use (F6)
 - `README.md`, Tax note (F6)
 
@@ -68,3 +68,9 @@ No pipeline code before F3 is agreed.
 - Use the BRIEF's terms consistently.
 - No filler, buzzwords or emoji.
 - Mermaid only where it explains a flow or a model; small and readable on GitHub.
+- IDs: one letter for the kind and two digits (R01 rule, Q01 open question, D01 decision, I01 data issue, C01 input
+  check, W01 worked example, S01 scenario). Each is defined once; see `docs/design.md`, IDs. Cite in the order R, Q, D,
+  I, C, W, S. IDs never change once delivered.
+- Files, pipeline checks, reasons, tables and columns are cited by their exact name in `code`.
+- File names: kebab-case for documents and notebooks (`data-issues.md`), snake_case for code and data (`03_lines.sql`).
+- Amounts: in tables the header says `(USD)`; in text `17,017.98 USD`. Months `2026-01`, quarter `2026-Q1`.

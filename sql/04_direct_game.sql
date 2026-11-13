@@ -1,4 +1,4 @@
--- Direct cost on a cost center with a game: 100% to that game (R4).
+-- Direct cost on a cost center with a game: 100% to that game (R04).
 
 CREATE OR REPLACE TABLE pieces_game AS
 SELECT

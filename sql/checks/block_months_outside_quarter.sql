@@ -1,4 +1,4 @@
--- Q9: the ledger months are the three months of one calendar quarter.
+-- Q09: the ledger months are the three months of one calendar quarter.
 -- Returns every ledger month when they are not.
 WITH months AS (
     SELECT DISTINCT CAST(month || '-01' AS DATE) AS first_day FROM ledger

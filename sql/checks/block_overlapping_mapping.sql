@@ -1,4 +1,4 @@
--- Q3: at most one mapping row is valid for a game or bucket in each ledger month (R10).
+-- Q03: at most one mapping row is valid for a game or bucket in each ledger month (R10).
 SELECT
     m.game_group,
     l.month,

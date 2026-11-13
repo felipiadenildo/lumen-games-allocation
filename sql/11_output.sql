@@ -1,4 +1,4 @@
--- The three result files as they are written: amounts rounded to cents only here (decision 5, Q7),
+-- The three result files as they are written: amounts rounded to cents only here (Q07, D05),
 -- rows always in the same order. run.py copies these tables to output/ when no block_ check fails.
 
 CREATE OR REPLACE TABLE output_allocation AS

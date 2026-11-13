@@ -1,5 +1,5 @@
--- Bearing group and side of each piece, from the mapping row valid that month (R6, R7, R9, R10).
--- A piece with no valid mapping row, or a bad bucket row, stays unallocated (Q1, Q5).
+-- Bearing group and side of each piece, from the mapping row valid that month (R06, R07, R09, R10).
+-- A piece with no valid mapping row, or a bad bucket row, stays unallocated (Q01, Q05).
 
 CREATE OR REPLACE TABLE pieces AS
 SELECT * FROM pieces_game
@@ -35,12 +35,12 @@ SELECT
         WHEN NOT has_mapping THEN 'no_mapping_row'
         WHEN cost_type = 'indirect' AND (mapping_bearing_group IS NULL OR mapping_side = 'By entity') THEN 'bad_mapping_row'
     END AS reason,
-    -- Direct: the cost doesn't change entity (R6). Indirect: from the bucket row (R9).
+    -- Direct: the cost doesn't change entity (R06). Indirect: from the bucket row (R09).
     CASE
         WHEN cost_type = 'direct' THEN booked_group
         ELSE mapping_bearing_group
     END AS bearing_group,
-    -- By entity: BR Games when booked by LGB, US Games for any other entity (R7)
+    -- By entity: BR Games when booked by LGB, US Games for any other entity (R07)
     CASE
         WHEN mapping_side = 'By entity' AND booked_entity = 'LGB' THEN 'BR Games'
         WHEN mapping_side = 'By entity' THEN 'US Games'

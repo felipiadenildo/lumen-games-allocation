@@ -1,4 +1,4 @@
--- Trim the name columns used to match tables (Q8, decision 8).
+-- Trim the name columns used to match tables (Q08, D08).
 -- First keep every value that will change, then change it.
 
 CREATE OR REPLACE TABLE trimmed_values AS

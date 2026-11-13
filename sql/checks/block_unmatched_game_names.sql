@@ -1,4 +1,4 @@
--- Every game in pools.csv and headcount_games.csv has a row in game_mapping.csv (after trimming).
+-- Q08: every game in pools.csv and headcount_games.csv has a row in game_mapping.csv (after trimming).
 -- A misspelled name there drops out of a pool split without any other error and moves dollars between games.
 SELECT DISTINCT 'pools' AS table_name, p.game
 FROM pools p

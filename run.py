@@ -3,7 +3,7 @@
 Usage, from the repo root:  python run.py
 
 All the data work is in sql/. This script only runs the files in name order,
-runs the checks in sql/checks/ and writes output/ (decisions 1, 2, 4 and 7 in docs/design.md).
+runs the checks in sql/checks/ and writes output/ (D01, D02, D04 and D07 in docs/design.md).
 """
 
 import sys
@@ -21,7 +21,7 @@ RESULTS = ["allocation", "summary", "reconciliation"]
 con = duckdb.connect()
 
 # Remove the previous results first, so a run that stops on an error or a block_ check
-# leaves no stale number in output/ (decision 4).
+# leaves no stale number in output/ (D04).
 OUTPUT.mkdir(exist_ok=True)
 for name in RESULTS + ["checks"]:
     (OUTPUT / f"{name}.csv").unlink(missing_ok=True)
@@ -60,7 +60,7 @@ for check in sorted(CHECKS.glob("*.sql")):
     con.execute("INSERT INTO checks VALUES (?, ?, ?, ?, ?)", [name, level, result, rows, amount])
     print(f"check {name}: {result}, {rows} rows")
 
-    # Show what was found: every trimmed value (Q8), the first 10 rows of any other check
+    # Show what was found: every trimmed value (Q08), the first 10 rows of any other check
     if rows > 0:
         limit = "" if name == "warn_trimmed_values" else "LIMIT 10"
         print(con.sql(f"SELECT * FROM found {limit}"))

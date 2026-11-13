@@ -1,5 +1,5 @@
--- R1, R11: ledger = out of scope + allocated + unallocated, and the summary total = in scope,
--- for each month and the quarter, within the Q7 tolerance.
+-- R01, R11: ledger = out of scope + allocated + unallocated, and the summary total = in scope,
+-- for each month and the quarter, within the Q07 tolerance.
 SELECT period, 'ledger vs allocation' AS problem, difference AS amount_usd
 FROM reconciliation
 WHERE abs(difference) >= 0.005

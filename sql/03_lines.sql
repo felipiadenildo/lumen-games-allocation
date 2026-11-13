@@ -1,5 +1,5 @@
--- One row per ledger line, with its lookups, its cost type (R2, R3)
--- and the reason when the line stops before it is split (R1, Q1).
+-- One row per ledger line, with its lookups, its cost type (R02, R03)
+-- and the reason when the line stops before it is split (R01, Q01).
 
 CREATE OR REPLACE TABLE lines AS
 WITH joined AS (
@@ -47,7 +47,7 @@ with_reason AS (
 )
 SELECT
     *,
-    -- R1: these two reasons take a line out of scope; any other reason keeps it in scope, unallocated.
+    -- R01: these two reasons take a line out of scope; any other reason keeps it in scope, unallocated.
     -- To exclude another account group: add its WHEN above and its reason here.
     coalesce(line_reason IN ('zero_amount', 'depreciation'), false) AS out_of_scope
 FROM with_reason;

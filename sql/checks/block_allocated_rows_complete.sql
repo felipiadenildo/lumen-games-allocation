@@ -1,4 +1,4 @@
--- R5, R6, R7, R9: every allocated row has a full, valid destination.
+-- R05, R06, R07, R09: every allocated row has a full, valid destination.
 SELECT line_id, game_or_bucket, 'no game or bucket' AS problem, amount_usd
 FROM allocation
 WHERE status = 'allocated' AND game_or_bucket IS NULL

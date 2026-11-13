@@ -1,4 +1,4 @@
--- Q2: every input table is unique at the grain the BRIEF states (after trimming).
+-- Q02: every input table is unique at the grain the BRIEF states (after trimming).
 -- A duplicate key would multiply dollars in a join.
 SELECT 'ledger' AS table_name, line_id AS key, COUNT(*) AS copies
 FROM ledger GROUP BY line_id HAVING COUNT(*) > 1

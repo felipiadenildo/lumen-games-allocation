@@ -1,4 +1,4 @@
--- The allocation table: every ledger line, one row per piece (decision 3).
+-- The allocation table: every ledger line, one row per piece (D03).
 -- A line with no piece (out of scope, or stopped before the split) has one row with share 1.
 
 CREATE OR REPLACE TABLE allocation AS
@@ -47,7 +47,7 @@ SELECT
     1.0::DOUBLE AS share,
     l.amount_usd,
     CASE WHEN l.out_of_scope THEN 'out_of_scope' ELSE 'unallocated' END AS status,
-    -- A line that passed every step but got no piece had nothing to split by (R5, R8)
+    -- A line that passed every step but got no piece had nothing to split by (R05, R08)
     coalesce(l.line_reason, 'nothing_to_split') AS reason
 FROM lines l
 WHERE l.line_id NOT IN (SELECT line_id FROM pieces);

@@ -1,5 +1,5 @@
 -- Direct cost on a pool: split across the pool's games by FTE that month,
--- among the games with FTE > 0 (R5).
+-- among the games with FTE > 0 (R05).
 
 CREATE OR REPLACE TABLE pool_shares AS
 SELECT
