@@ -11,15 +11,13 @@ Existing:
 
 - `docs/design.md` — rules, data model, open questions, decisions, output, line path, worked examples, pipeline, validation
 - `docs/tax-note.md` — one-page note to the Tax team (F6)
+- `docs/ai-usage.md` — how AI was used, what was kept and rejected, every prompt in an appendix
 - `docs/data-issues.md` — every data issue; dollar impact filled by the pipeline (F2, F5)
 - `notebooks/` — exploration, worked examples, scenarios and results (pandas, matplotlib); not used by the pipeline
 - `docs/img/` — charts written by `notebooks/04-results.ipynb`
 - `output/` — pipeline results, committed as part of the delivery
 - `run.py` — runs the SQL steps, the checks and writes `output/`
 - `sql/` — one SQL file per step, run in name order; `sql/checks/` — one check per file
-
-Planned:
-- `docs/ai-usage.md` — record of AI use (F6)
 
 ## How to run and check
 ```bash
