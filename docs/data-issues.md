@@ -1,12 +1,12 @@
 # Data issues
 
-Three issues found in the inputs. One has a known dollar impact so far (17,017.98 USD unallocated); the pipeline fills in the other two.
+Three issues found in the inputs. Two leave dollars unallocated: 32,055.97 USD in the quarter (D1 + D3, `output/reconciliation.csv`). The third is fixed by the pipeline, and 753,920.16 USD depend on that fix (D2).
 
 | # | Table | Issue | Rows | Handling | Dollar impact |
 |---|---|---|---|---|---|
-| D1 | ledger, cost_centers | Cost center `3999` is used in the ledger but is not in `cost_centers.csv`, so the line has no department. (check 7) | 1 line: `L00169`, 2026-02, LGB | Unallocated with reason `unknown_cost_center` (Q1). | 17,017.98 USD unallocated |
-| D2 | game_mapping | The game name `"Star Racer "` has a space at the end, so it matches no cost center, pool or headcount row. (checks 2, 8) | 1 mapping row | The pipeline removes the extra space before matching names. Only the name columns used to match tables are changed, and the run log lists every value it changed (Q8). | To be filled in by the pipeline: Star Racer dollars that would have had no side |
-| D3 | headcount_employees, game_mapping | Bucket `live_fi` has no mapping row. It appears in 2026-03, when LGF has 2 Live Games employees. (check 9) | 2 employees, 2026-03 | Their share of March indirect costs is unallocated with reason `no_mapping_row` (Q1). | To be filled in by the pipeline |
+| D1 | ledger, cost_centers | Cost center `3999` is used in the ledger but is not in `cost_centers.csv`, so the line has no department. (check 7) | 1 line: `L00169`, 2026-02, LGB | Unallocated with reason `unknown_cost_center` (Q1). | 17,017.98 USD unallocated in 2026-02 (`output/reconciliation.csv`). |
+| D2 | game_mapping | The game name `"Star Racer "` has a space at the end, so it matches no cost center, pool or headcount row. (checks 2, 8) | 1 mapping row | The pipeline removes the extra space before matching names. Only the name columns used to match tables are changed, and the run log lists every value it changed (Q8). | None after the fix. Without it, all 76 Star Racer pieces (single-game and pool lines), 753,920.16 USD, would have had no side and been unallocated (sum of `output/allocation.csv` rows for Star Racer). |
+| D3 | headcount_employees, game_mapping | Bucket `live_fi` has no mapping row. It appears in 2026-03, when LGF has 2 Live Games employees. (check 9) | 2 employees, 2026-03 | Their share of March indirect costs is unallocated with reason `no_mapping_row` (Q1). | 15,037.99 USD unallocated in 2026-03: one `live_fi` piece on each of the 82 indirect lines of March (`output/reconciliation.csv`, March unallocated after D1). |
 
 ## Checked and fine
 
