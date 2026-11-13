@@ -6,8 +6,8 @@ in [`BRIEF.md`](BRIEF.md).
 
 ## Results
 
-Of the 6,539,250.85 USD in scope, BR Games bears 4,642,414.76 USD (71%) and US Games 1,864,780.12 USD (29%);
-32,055.97 USD is not on a side yet, pending two answers from Tax. The ledger reconciles to the cent in every month.
+Of the 6,539,250.85 USD in scope, BR Games bears 4,642,414.76 USD (71.0%) and US Games 1,864,780.12 USD (28.5%);
+32,055.97 USD (0.5%) is not on a side yet, pending two answers from Tax. The ledger reconciles to the cent in every month.
 
 ![Who bears the quarter's cost, by booked group](docs/img/quarter-by-booked-group.png)
 
@@ -28,7 +28,7 @@ python run.py
 `run.py` prints each step and check. It exits with 0 when every `block_` check passes and writes `output/`. When a
 `block_` check fails, it names the check, exits with 1 and writes only `output/checks.csv` (D04).
 
-The notebooks in `notebooks/` open in VS Code or Jupyter with the `.venv` kernel. Run `python run.py` first: they read
+The notebooks in `notebooks/` open in VS Code with the `.venv` kernel. Run `python run.py` first: they read
 `output/`.
 
 ## Outputs
@@ -80,15 +80,15 @@ decisions, ...) are explained in its [IDs](docs/design.md#ids) section.
 
 ## Known limits
 
-- **Cents.** Pieces are rounded one by one, so a line's rounded pieces can differ from the line by up to 0.02 USD (148
-  of 646 lines differ by a cent or two). Adding up `allocation.csv` gives 6,507,195.13 USD allocated in the quarter,
-  0.25 USD more than `reconciliation.csv`, which adds up at full precision (D05).
+- **Cents.** Pieces are rounded one by one, so a line's rounded pieces can differ from the line: 148 of the 397 split
+  lines, by at most 0.02 USD. Adding up `allocation.csv` gives 6,507,195.13 USD allocated in the quarter, 0.25 USD more
+  than `reconciliation.csv`, which adds up at full precision (D05; `notebooks/04-results.ipynb`, Cents).
 - **A wrong but valid mapping row is not caught.** If the mapping file gives a game the wrong side, every check still
   passes; only the worked examples check the result of the rules.
 - **Two issues are open** until Tax answers: cost center 3999 (17,017.98 USD) and the Finnish Live Games employees
   (15,037.99 USD). See [`docs/data-issues.md`](docs/data-issues.md).
 - **Q04 is an assumption.** The other reading moves about 180,980 USD off BR Games and 188,845 USD onto US Games in the
-  quarter (S18).
+  quarter, and places about 7,865 USD that is now unallocated (S18).
 
 ## How it was built
 
