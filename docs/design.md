@@ -4,7 +4,7 @@
 
 ### R1. Scope
 - **Rule:** every ledger line is in scope except lines whose account group is Depreciation and lines whose amount is 0. Credits (negative amounts) stay in scope.
-- **Check:** in-scope + out-of-scope = all ledger lines, in count and in dollars. Every out-of-scope line is in the output with its reason (depreciation or zero_amount); schema in F3.
+- **Check:** in-scope + out-of-scope = all ledger lines, in count and in dollars. Every out-of-scope line is in the output with its reason (depreciation or zero_amount); see Output.
 
 ### R2. Booked entity and booked group
 - **Rule:** the booked entity is the line's entity. The booked group is that entity's entity_group in entities.csv.
@@ -170,3 +170,110 @@ Dates are cast explicitly in the load step, so a date that isn't `yyyy-MM-dd` st
 
 Expected on this data: every `block_` check passes; both `warn_` checks give `warn` (D1 and D3 for unallocated, D2
 for trimmed values).
+
+## How a line is allocated
+
+Each ledger line follows this path. The first step that fails gives the line its status and reason (see Output). The
+last two failures apply to one piece only: the other pieces of the line are still allocated.
+
+```mermaid
+flowchart TD
+    L["Ledger line"] --> Z{"Amount is 0? (R1)"}
+    Z -- yes --> OZ["out_of_scope: zero_amount"]
+    Z -- no --> A{"Account found?"}
+    A -- no --> UA["unallocated: unknown_account"]
+    A -- yes --> DP{"Depreciation? (R1)"}
+    DP -- yes --> OD["out_of_scope: depreciation"]
+    DP -- no --> E{"Entity found? (R2)"}
+    E -- no --> UE["unallocated: unknown_entity"]
+    E -- yes --> C{"Cost center found?"}
+    C -- no --> UC["unallocated: unknown_cost_center"]
+    C -- yes --> D{"Department? (R3)"}
+    D -- "Live Games, New Games" --> DIR{"Game or pool?"}
+    D -- "Engineering, Marketing, People, Operations" --> IND["Split by the month's employees per bucket (R8)"]
+    D -- other --> UD["unallocated: unknown_department"]
+    DIR -- game --> G["100% to the game (R4)"]
+    DIR -- pool --> P["Split by FTE among the pool's games with FTE > 0 (R5)"]
+    DIR -- "both or neither" --> UB["unallocated: bad_cost_center"]
+    P -- "no game with FTE" --> UN["unallocated: nothing_to_split"]
+    IND -- "no employees" --> UN
+    G --> M{"Mapping row valid that month? (R10)"}
+    P --> M
+    IND --> M
+    M -- no --> UM["unallocated piece: no_mapping_row"]
+    M -- "bucket row with blank bearing group or By entity" --> UBM["unallocated piece: bad_mapping_row"]
+    M -- yes --> OK["allocated: bearing group (R6, R9) and side (R7, R9)"]
+```
+
+## Worked examples
+
+Real lines from the data, computed independently of the pipeline in
+[`notebooks/02-worked-examples.ipynb`](../notebooks/02-worked-examples.ipynb). The pipeline must give the same rows
+(compared in F5).
+
+**1. Direct, single game.** L00105, 2026-01, LGB, Salaries, cost center 1001 Star Racer, 103,255.10.
+The cost center has a game, so the share is 1 (R4). The mapping row is `Star Racer ` with a trailing space (D2); after
+the trim it matches (`01-explore`, check 8). Bearing group = booked group = BR (R6).
+
+| Game | Share | Amount | Bearing group | Side |
+|---|---|---|---|---|
+| Star Racer | 1 | 103,255.10 | BR | BR Games |
+
+**2. Direct, pool.** L00054, 2026-01, LGB, Salaries, cost center 2010 New Games Prototyping, pool NEW_SHARED,
+21,972.14. Moon Miner is in the pool but has no FTE in January, so it gets nothing (R5). FTE of the others: 11.5 + 14.5
++ 9 + 6 = 41. Puzzle Pals is still BR Games in January.
+
+| Game | Share | Amount | Bearing group | Side |
+|---|---|---|---|---|
+| Pixel Farm | 14.5 / 41 | 7,770.63 | BR | US Games |
+| Puzzle Pals | 11.5 / 41 | 6,162.92 | BR | BR Games |
+| Rune Quest | 9 / 41 | 4,823.15 | BR | US Games |
+| Tiny Chef | 6 / 41 | 3,215.44 | BR | BR Games |
+| **Total** | 1 | **21,972.14** | | |
+
+The bearing group stays BR on the US Games rows: a direct cost doesn't change entity (R6).
+
+**3. Indirect.** L00444, 2026-02, LGB, Salaries, cost center 3301 Finance, 21,346.02. The company has 123 employees in
+February (R8, Q4).
+
+| Bucket | Share | Amount | Bearing group | Side |
+|---|---|---|---|---|
+| live_br | 71 / 123 | 12,321.69 | BR | BR Games |
+| new_br | 25 / 123 | 4,338.62 | BR | BR Games |
+| new_fi | 8 / 123 | 1,388.36 | FI | US Games |
+| new_others | 5 / 123 | 867.72 | Others | US Games |
+| new_us | 14 / 123 | 2,429.63 | US | US Games |
+| **Total** | 1 | **21,346.02** | | |
+
+**4. By entity.** Legacy Arcade (cost center 1004) maps to By entity (R7). Same game and month, two entities:
+
+| Line | Entity | Amount | Bearing group | Side |
+|---|---|---|---|---|
+| L00334, 2026-01, Salaries | LGB | 24,203.53 | BR | BR Games |
+| L00336, 2026-01, Salaries | LGI | 12,825.36 | US | US Games |
+
+**5. Mapping dates.** Puzzle Pals (cost center 2001) moves from BR Games to US Games on 2026-03-01 (R10). Same entity
+and account, two months:
+
+| Line | Month | Amount | Bearing group | Side |
+|---|---|---|---|---|
+| L00114, LGB, Salaries | 2026-02 | 31,929.39 | BR | BR Games |
+| L00494, LGB, Salaries | 2026-03 | 32,256.22 | BR | US Games |
+
+The bearing group stays BR: only the side changes.
+
+**6. Unallocated.** Two cases, one per level:
+- **Whole line (D1).** L00169, 2026-02, LGB, Professional Services, cost center 3999, 17,017.98. The cost center isn't
+  in `cost_centers.csv`, so the line has one row: share 1, no game, status `unallocated`, reason `unknown_cost_center`.
+- **One piece (D3).** L00234, 2026-03, LGB, Salaries, cost center 3301 Finance, 24,080.73. There are 125 employees in
+  March, 2 of them in live_fi, which has no mapping row.
+
+| Bucket | Share | Amount | Bearing group | Side | Status |
+|---|---|---|---|---|---|
+| live_br | 70 / 125 | 13,485.21 | BR | BR Games | allocated |
+| live_fi | 2 / 125 | 385.29 | | | unallocated, `no_mapping_row` |
+| new_br | 26 / 125 | 5,008.79 | BR | BR Games | allocated |
+| new_fi | 8 / 125 | 1,541.17 | FI | US Games | allocated |
+| new_others | 5 / 125 | 963.23 | Others | US Games | allocated |
+| new_us | 14 / 125 | 2,697.04 | US | US Games | allocated |
+| **Total** | 1 | **24,080.73** | | | |
