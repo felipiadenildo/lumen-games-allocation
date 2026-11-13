@@ -9,15 +9,17 @@ Existing:
 - `data/` — source CSVs (read-only input)
 
 - `docs/design.md` — rules, data model, open questions, decisions, output, line path, worked examples, pipeline, validation
+- `docs/tax-note.md` — one-page note to the Tax team (F6)
 - `docs/data-issues.md` — every data issue; dollar impact filled by the pipeline (F2, F5)
-- `notebooks/` — exploration, worked examples and scenarios (pandas); not used by the pipeline
+- `notebooks/` — exploration, worked examples, scenarios and results (pandas, matplotlib); not used by the pipeline
+- `docs/img/` — charts written by `notebooks/04-results.ipynb`
 - `output/` — pipeline results, committed as part of the delivery
 - `run.py` — runs the SQL steps, the checks and writes `output/`
 - `sql/` — one SQL file per step, run in name order; `sql/checks/` — one check per file
 
 Planned:
 - `docs/ai-usage.md` — record of AI use (F6)
-- `README.md`, Tax note (F6)
+- `README.md` (F6)
 
 ## How to run and check
 ```bash
