@@ -18,7 +18,8 @@ How the allocation works: what the BRIEF asks, the data, the decisions, the outp
 | [Validation](#validation) | the pipeline checked from outside (S01–S18) | F5 |
 
 Phases: F1 understand the request, F2 understand the data, F3 design, F4 build, F5 validate, F6 communicate, F7 deliver.
-F6 and F7 produce the README, the Tax note and the delivery, not sections here (phase plan in [`CLAUDE.md`](../CLAUDE.md)).
+F6 and F7 produce the README, the Tax note and the delivery, not sections here. What each phase produced:
+[README, How it was built](../README.md#how-it-was-built).
 
 ## IDs
 

@@ -5,6 +5,7 @@ Lumen Games take-home: allocate each month's ledger costs to BR Games or US Game
 
 ## Folder layout
 Existing:
+- `README.md` — results, how to run, outputs, decisions, limits, how it was built
 - `BRIEF.md` — problem statement (read-only input)
 - `data/` — source CSVs (read-only input)
 
@@ -19,7 +20,6 @@ Existing:
 
 Planned:
 - `docs/ai-usage.md` — record of AI use (F6)
-- `README.md` (F6)
 
 ## How to run and check
 ```bash
