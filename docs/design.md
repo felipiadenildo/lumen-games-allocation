@@ -85,7 +85,7 @@ Notes:
 - The summary leaves out `out_of_scope` and shows `Unallocated` next to BR Games and US Games, by booked group, for
   each month and the quarter.
 - Checks and their levels are listed under Output, `checks.csv`.
-- The notebooks are exploration and worked examples; the pipeline doesn't use them.
+- The notebooks are exploration, worked examples and scenarios (see Validation); the pipeline doesn't use them.
 
 ## Output
 
@@ -278,3 +278,35 @@ The bearing group stays BR: only the side changes.
 | new_others | 5 / 125 | 963.23 | Others | US Games | allocated |
 | new_us | 14 / 125 | 2,697.04 | US | US Games | allocated |
 | **Total** | 1 | **24,080.73** | | | |
+
+## Validation
+
+Two notebooks check the pipeline from outside, without changing it:
+
+- [`notebooks/02-worked-examples.ipynb`](../notebooks/02-worked-examples.ipynb) recomputes the six worked examples in
+  pandas and compares all 21 rows with `output/allocation.csv`: same pieces, amounts to the cent, bearing group and
+  side.
+- [`notebooks/03-scenarios.ipynb`](../notebooks/03-scenarios.ipynb) runs 16 scenarios. Each one copies the project to
+  a temporary folder, makes one change and runs the pipeline there. The expected result is written before the run.
+
+| # | Change | Expected | Result |
+|---|---|---|---|
+| A1 | A ledger line appears twice | `block_duplicate_keys` fails, only `checks.csv` left | as expected |
+| A2 | Two mapping rows valid in the same month | `block_overlapping_mapping` fails, only `checks.csv` left | as expected |
+| A3 | A ledger line in April | `block_months_outside_quarter` fails, only `checks.csv` left | as expected |
+| A4 | A date the load step can't read | error in the load step, `output/` empty | as expected |
+| A5 | Unknown entity on a line | the line is unallocated, `unknown_entity`; reconciles | as expected |
+| A6 | Unknown account on a line | unallocated, `unknown_account`; in scope unchanged | as expected |
+| A7 | `Depreciation ` with a trailing space | trim logged; out of scope unchanged | as expected |
+| A8 | A pool with no FTE in a month | its in-scope lines: one row each, `nothing_to_split` | as expected |
+| A9 | An employee with an unknown entity | `live_unknown` pieces, `no_mapping_row`; reconciles | as expected |
+| A10 | A direct cost center with a game and a pool | its lines: `bad_cost_center` | as expected |
+| B1 | "Cost center 3999 is Marketing" (data only) | L00169 allocated; nothing unallocated in February | as expected |
+| B2 | "Add the mapping row for live_fi" (data only) | nothing unallocated in March | as expected |
+| B3 | "Puzzle Pals moved in February" (data only) | its February dollars move to US Games | as expected |
+| B4 | "Exclude account group Administrative" (`03_lines.sql`, two lines) | out of scope grows by the Administrative dollars; reconciles | as expected |
+| B5 | "A new game with its own cost center" (data only) | the line goes 100% to the new game | as expected |
+| B6 | A live edit breaks the pool split (`05_direct_pool.sql`) | `block_shares_not_one` fails and is named in the last line | as expected |
+
+Two expectations were wrong the first time, not the pipeline: A8 forgot that a Depreciation line on the pool stays out
+of scope, and B4 summed rounded pieces instead of line amounts.
