@@ -57,7 +57,7 @@
 | Q5 | A bucket row says By entity. | Does not happen in this data (check 11). If it appears, it is a Q1 case: unallocated with a reason, the run warns. | if it happens |
 | Q6 | Credits are split with the same shares, so destinations get negative amounts. | Yes, same shares; credits are not netted before allocating. | no |
 | Q7 | Rounding: when to round to cents. | Keep full precision; round only in the output files. Reconciliation passes when abs(difference) < 0.005. | no |
-| Q8 | Text keys that almost match (spaces). | Trim only the name columns used to match tables; the run log lists every value changed. | yes, as an issue |
+| Q8 | Text keys that almost match (spaces). | Trim only the name columns used to match tables or compared to a rule's value (`account_group`); the run log lists every value changed. | yes, as an issue |
 | Q9 | Is the quarter exactly the months in the ledger? | Yes. The ledger covers 2026-01 to 2026-03, the first quarter of 2026 (check 11). The pipeline keeps the check. | no |
 
 

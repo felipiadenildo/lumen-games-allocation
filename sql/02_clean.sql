@@ -19,7 +19,9 @@ SELECT 'headcount_games', 'game', game, trim(game) FROM headcount_games WHERE ga
 UNION ALL
 SELECT 'headcount_employees', 'category', category, trim(category) FROM headcount_employees WHERE category <> trim(category)
 UNION ALL
-SELECT 'entities', 'entity_group', entity_group, trim(entity_group) FROM entities WHERE entity_group <> trim(entity_group);
+SELECT 'entities', 'entity_group', entity_group, trim(entity_group) FROM entities WHERE entity_group <> trim(entity_group)
+UNION ALL
+SELECT 'accounts', 'account_group', account_group, trim(account_group) FROM accounts WHERE account_group <> trim(account_group);
 
 UPDATE game_mapping SET game_group = trim(game_group);
 UPDATE cost_centers SET game = trim(game), pool_id = trim(pool_id), department = trim(department);
@@ -27,3 +29,4 @@ UPDATE pools SET pool_id = trim(pool_id), game = trim(game);
 UPDATE headcount_games SET game = trim(game);
 UPDATE headcount_employees SET category = trim(category);
 UPDATE entities SET entity_group = trim(entity_group);
+UPDATE accounts SET account_group = trim(account_group);

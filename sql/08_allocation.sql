@@ -46,7 +46,7 @@ SELECT
     NULL AS side,
     1.0::DOUBLE AS share,
     l.amount_usd,
-    CASE WHEN l.line_reason IN ('zero_amount', 'depreciation') THEN 'out_of_scope' ELSE 'unallocated' END AS status,
+    CASE WHEN l.out_of_scope THEN 'out_of_scope' ELSE 'unallocated' END AS status,
     -- A line that passed every step but got no piece had nothing to split by (R5, R8)
     coalesce(l.line_reason, 'nothing_to_split') AS reason
 FROM lines l

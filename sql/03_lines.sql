@@ -28,17 +28,26 @@ WITH joined AS (
     LEFT JOIN entities e ON e.entity = l.entity
     LEFT JOIN accounts a ON a.account = l.account
     LEFT JOIN cost_centers c ON c.cost_center = l.cost_center
+),
+with_reason AS (
+    SELECT
+        * EXCLUDE (account_found, entity_found, cost_center_found),
+        -- The first step that fails gives the reason (see the Output section of docs/design.md)
+        CASE
+            WHEN amount_usd = 0 THEN 'zero_amount'
+            WHEN NOT account_found THEN 'unknown_account'
+            WHEN account_group = 'Depreciation' THEN 'depreciation'
+            WHEN NOT entity_found THEN 'unknown_entity'
+            WHEN NOT cost_center_found THEN 'unknown_cost_center'
+            WHEN cost_type IS NULL THEN 'unknown_department'
+            WHEN cost_type = 'direct' AND game IS NULL AND pool_id IS NULL THEN 'bad_cost_center'
+            WHEN cost_type = 'direct' AND game IS NOT NULL AND pool_id IS NOT NULL THEN 'bad_cost_center'
+        END AS line_reason
+    FROM joined
 )
 SELECT
-    * EXCLUDE (account_found, entity_found, cost_center_found),
-    -- The first step that fails gives the reason (see the Output section of docs/design.md)
-    CASE
-        WHEN amount_usd = 0 THEN 'zero_amount'
-        WHEN NOT account_found THEN 'unknown_account'
-        WHEN account_group = 'Depreciation' THEN 'depreciation'
-        WHEN NOT entity_found THEN 'unknown_entity'
-        WHEN NOT cost_center_found THEN 'unknown_cost_center'
-        WHEN cost_type IS NULL THEN 'unknown_department'
-        WHEN cost_type = 'direct' AND (game IS NULL) = (pool_id IS NULL) THEN 'bad_cost_center'
-    END AS line_reason
-FROM joined;
+    *,
+    -- R1: these two reasons take a line out of scope; any other reason keeps it in scope, unallocated.
+    -- To exclude another account group: add its WHEN above and its reason here.
+    coalesce(line_reason IN ('zero_amount', 'depreciation'), false) AS out_of_scope
+FROM with_reason;
