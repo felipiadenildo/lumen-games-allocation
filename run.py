@@ -68,3 +68,7 @@ if blocked:
         (OUTPUT / f"{name}.csv").unlink(missing_ok=True)
     print("A block_ check failed: results deleted, see output/checks.csv")
     sys.exit(1)
+
+for name in RESULTS:
+    con.execute(f"COPY output_{name} TO '{OUTPUT / f'{name}.csv'}' (HEADER)")
+    print(f"wrote output/{name}.csv")

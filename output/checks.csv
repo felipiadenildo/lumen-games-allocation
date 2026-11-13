@@ -1,0 +1,9 @@
+check,level,result,rows,amount_usd
+block_allocated_rows_complete,block,pass,0,
+block_duplicate_keys,block,pass,0,
+block_months_outside_quarter,block,pass,0,
+block_overlapping_mapping,block,pass,0,
+block_reconciliation,block,pass,0,
+block_shares_not_one,block,pass,0,
+warn_trimmed_values,warn,warn,1,
+warn_unallocated,warn,warn,83,32055.97
