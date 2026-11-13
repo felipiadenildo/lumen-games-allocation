@@ -46,6 +46,72 @@
 - **Rule:** ledger total = out of scope + allocated + unallocated, for each month and in total. The summary shows the amount by booked group × side, for each month and for the quarter. The quarter is the sum of the months.
 - **Check:** the equation holds with abs(difference) < 0.005. Summary total = allocated + unallocated (the in-scope total).
 
+## Data model
+
+Eight input files. The ledger is the fact table; the others describe its codes, or give the shares and the sides.
+
+```mermaid
+erDiagram
+    LEDGER {
+        string line_id PK
+        string month
+        string entity FK
+        string account FK
+        string cost_center FK
+        decimal amount_usd
+    }
+    ENTITIES {
+        string entity PK
+        string entity_group
+    }
+    ACCOUNTS {
+        string account PK
+        string account_group
+    }
+    COST_CENTERS {
+        string cost_center PK
+        string department
+        string game
+        string pool_id
+    }
+    POOLS {
+        string pool_id PK
+        string game PK
+    }
+    HEADCOUNT_GAMES {
+        string month PK
+        string game PK
+        double fte
+    }
+    HEADCOUNT_EMPLOYEES {
+        string month PK
+        string employee_id PK
+        string entity FK
+        string category
+    }
+    GAME_MAPPING {
+        string game_group PK
+        date start_date PK
+        date end_date
+        string bearing_group
+        string side
+    }
+    ENTITIES ||--o{ LEDGER : "books"
+    ACCOUNTS ||--o{ LEDGER : "classifies"
+    COST_CENTERS ||--o{ LEDGER : "is charged"
+    COST_CENTERS }o--o{ POOLS : "pool_id"
+    ENTITIES ||--o{ HEADCOUNT_EMPLOYEES : "employs"
+    GAME_MAPPING ||--o{ COST_CENTERS : "game"
+    GAME_MAPPING ||--o{ POOLS : "game"
+    GAME_MAPPING ||--o{ HEADCOUNT_GAMES : "game"
+    GAME_MAPPING }o..o{ HEADCOUNT_EMPLOYEES : "bucket, built from category and entity group"
+```
+
+- Games and buckets have no table of their own. `game_mapping.csv` holds every game and bucket name, one row per
+  period, and the other files refer to those names.
+- A bucket is not stored anywhere: it is built from the employee's category and their entity's group (R8).
+- Keys are the grain the BRIEF states; `block_duplicate_keys` checks them on every run (Q2).
+
 ## Open questions
 
 | ID | Question | Assumption I use | Tax note? |
@@ -279,6 +345,49 @@ The bearing group stays BR: only the side changes.
 | new_others | 5 / 125 | 963.23 | Others | US Games | allocated |
 | new_us | 14 / 125 | 2,697.04 | US | US Games | allocated |
 | **Total** | 1 | **24,080.73** | | | |
+
+## Pipeline
+
+`python run.py` runs the files in `sql/` in name order, then the checks in `sql/checks/`, then writes `output/`.
+Each step creates tables that the next steps read. To change a rule, change the file in its row.
+
+```mermaid
+flowchart LR
+    D[("data/*.csv")] --> S1["01 load"] --> S2["02 clean"] --> S3["03 lines"]
+    S3 --> S4["04 direct game"]
+    S3 --> S5["05 direct pool"]
+    S3 --> S6["06 indirect"]
+    S4 --> S7["07 mapping"]
+    S5 --> S7
+    S6 --> S7
+    S7 --> S8["08 allocation"]
+    S8 --> S9["09 summary"]
+    S8 --> S10["10 reconciliation"]
+    S9 --> S11["11 output"]
+    S10 --> S11
+    S11 --> C{"checks: any block_ fails?"}
+    C -- no --> O[("output/: allocation, summary, reconciliation, checks")]
+    C -- yes --> X["exit 1: only checks.csv"]
+```
+
+| File | Creates | Rules |
+|---|---|---|
+| `01_load.sql` | the eight input tables; amounts as DECIMAL, FTE as DOUBLE, dates as DATE | decision 5 |
+| `02_clean.sql` | `trimmed_values`; names trimmed in place | Q8, D2 |
+| `03_lines.sql` | `lines`: one row per ledger line with its lookups, cost type, reason and scope | R1, R2, R3, Q1 |
+| `04_direct_game.sql` | `pieces_game` | R4 |
+| `05_direct_pool.sql` | `pool_shares`, `pieces_pool` | R5 |
+| `06_indirect.sql` | `employee_buckets`, `bucket_shares`, `pieces_indirect` | R8, Q4 |
+| `07_mapping.sql` | `pieces`, `pieces_mapped`: bearing group, side and reason of every piece | R6, R7, R9, R10, Q5 |
+| `08_allocation.sql` | `allocation`: every ledger line, one row per piece | decision 3, Notes |
+| `09_summary.sql` | `summary` | R11 |
+| `10_reconciliation.sql` | `reconciliation` | R1, R11 |
+| `11_output.sql` | the three tables as written: rounded and sorted | decision 5, Q7 |
+| `sql/checks/*.sql` | one query per check; the rows it returns are the problem | decision 7, Output |
+| `run.py` | runs everything above and writes `output/`; clears old results first | decisions 1, 2, 4 |
+
+The run happens in memory. To look at any table after a run: `python -i run.py`, then for example
+`con.sql("SELECT * FROM lines WHERE line_id = 'L00169'").show()`.
 
 ## Validation
 
