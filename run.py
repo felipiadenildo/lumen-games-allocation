@@ -6,11 +6,17 @@ All the data work is in sql/. This script only runs the files in name order,
 runs the checks in sql/checks/ and writes output/ (decisions 1, 2, 4 and 7 in docs/design.md).
 """
 
+import sys
 from pathlib import Path
 
 import duckdb
 
 SQL = Path("sql")
+CHECKS = SQL / "checks"
+OUTPUT = Path("output")
+
+# The result files. They are deleted when a block_ check fails, so no stale number stays in output/.
+RESULTS = ["allocation", "summary", "reconciliation"]
 
 con = duckdb.connect()
 
@@ -18,3 +24,47 @@ con = duckdb.connect()
 for step in sorted(SQL.glob("*.sql")):
     print(f"step  {step.name}")
     con.execute(step.read_text())
+
+# 2. The checks. Each query returns the rows it found; no rows means pass.
+con.execute("""
+    CREATE TABLE checks ("check" VARCHAR, level VARCHAR, result VARCHAR, rows INTEGER, amount_usd DECIMAL(18, 2))
+""")
+blocked = False
+
+for check in sorted(CHECKS.glob("*.sql")):
+    name = check.stem
+    level = "block" if name.startswith("block_") else "warn"
+    # Keep the rows found in a table, so they can be counted, summed and shown
+    con.execute(f"CREATE OR REPLACE TABLE found AS {check.read_text()}")
+    rows = con.execute("SELECT COUNT(*) FROM found").fetchone()[0]
+
+    # amount_usd only for checks that return dollars
+    amount = None
+    if "amount_usd" in con.table("found").columns:
+        amount = con.execute("SELECT SUM(amount_usd) FROM found").fetchone()[0]
+
+    if rows == 0:
+        result = "pass"
+    elif level == "warn":
+        result = "warn"
+    else:
+        result = "fail"
+        blocked = True
+
+    con.execute("INSERT INTO checks VALUES (?, ?, ?, ?, ?)", [name, level, result, rows, amount])
+    print(f"check {name}: {result}, {rows} rows")
+
+    # Show what was found: every trimmed value (Q8), the first 10 rows of any other check
+    if rows > 0:
+        limit = "" if name == "warn_trimmed_values" else "LIMIT 10"
+        print(con.sql(f"SELECT * FROM found {limit}"))
+
+# 3. The output files. checks.csv is always written.
+OUTPUT.mkdir(exist_ok=True)
+con.execute(f"COPY checks TO '{OUTPUT / 'checks.csv'}' (HEADER)")
+
+if blocked:
+    for name in RESULTS:
+        (OUTPUT / f"{name}.csv").unlink(missing_ok=True)
+    print("A block_ check failed: results deleted, see output/checks.csv")
+    sys.exit(1)
