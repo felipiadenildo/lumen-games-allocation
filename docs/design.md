@@ -68,21 +68,105 @@
 | 1 | **DuckDB SQL** for the pipeline. Python only runs the SQL, the checks and the output; it never changes the data. | The rules are joins and sums, and SQL reads close to them. |
 | 2 | **One SQL file per step** in `sql/`, run in name order by `run.py`. | A rule change is a change in one file. |
 | 3 | **One allocation table for every ledger line**, with `status` (allocated, unallocated, out_of_scope) and `reason`. | Every dollar is in one place; the reconciliation is one sum by status. |
-| 4 | **A blocking check stops the run**: it exits with an error and deletes `allocation.csv` and `summary.csv`. `checks.csv` is always written to `output/`. | No wrong or stale number stays in `output/`. |
+| 4 | **A blocking check stops the run**: it exits with an error and deletes `allocation.csv`, `summary.csv` and `reconciliation.csv`. `checks.csv` is always written to `output/`. | No wrong or stale number stays in `output/`. |
 | 5 | **Line amounts are read as `DECIMAL(18, 2)`; shares are DOUBLE.** A piece (amount × share) keeps full precision and is cast to `DECIMAL(18, 2)` only when written; the checks compare at full precision with the Q7 tolerance. A rounded piece may differ from its line by a cent; that is accepted, not adjusted, and the README says so. All files are read as text and cast explicitly in the load step. Output is sorted by `line_id`, then game or bucket. | Exact amounts in, cents out; the same input always gives the same file, so a change shows as a clean diff. |
 | 6 | **No test framework.** | The checks run with every run; worked examples are compared once in F5. |
-| 7 | **Checks are SQL queries in `sql/checks/`**, one per file, each returning the failing rows. The file name starts with `block_` or `warn_`. If a failure means the pipeline is wrong, it blocks; if it means the data is incomplete, it warns. | The level is visible in the file name; adding a check is adding a file. |
+| 7 | **Checks are SQL queries in `sql/checks/`**, one per file, each returning the failing rows. The file name starts with `block_` or `warn_`. If a failure means the numbers would be wrong or ambiguous (a key or mapping is duplicated, the months are not one quarter, the pipeline lost or created dollars), it blocks. If the dollars are kept but some have no destination, or a value was cleaned, it warns. | The level is visible in the file name; adding a check is adding a file. |
 | 8 | **The cleaning step trims names in SQL** and keeps a table of every value it changed (before, after). A `warn_` check reports it (Q8). | No value changes silently. |
 
 Notes:
 - The allocation table has one row per piece of a ledger line. A game or bucket with no mapping row is a piece with
   status `unallocated` and its game or bucket filled (the `live_fi` case). Only a line that can't be split at all has
   one row with no game or bucket.
+- A missing entity group becomes `unknown` in the bucket name (`live_unknown`, `new_unknown`); that bucket has no
+  mapping row, so its piece is unallocated with reason `no_mapping_row`.
 - Every row has a share; a line that isn't split has one row with share 1. So the shares of every line add up to 1,
   and its rows add up to its amount.
 - The summary leaves out `out_of_scope` and shows `Unallocated` next to BR Games and US Games, by booked group, for
   each month and the quarter.
-- Blocking checks: duplicate keys (Q2), two valid mapping rows (Q3), shares of a line not adding up to 1, reconciliation
-  outside the tolerance (R11). Warnings: unallocated dollars (Q1), trimmed names (Q8). The full list comes with the
-  output schema.
+- Checks and their levels are listed under Output, `checks.csv`.
 - The notebook in `notebooks/` was exploration only; the pipeline doesn't use it.
+
+## Output
+
+`python run.py` writes four files to `output/`. On a blocking check, only `checks.csv` is written and the other three
+are deleted (decision 4).
+
+### allocation.csv
+
+One row per piece of a ledger line (see Notes under Decisions). Sorted by `line_id`, then `game_or_bucket`.
+
+| Column | What it is |
+|---|---|
+| `line_id`, `month` | from the ledger |
+| `booked_entity`, `booked_group` | the line's entity and its `entity_group` (R2) |
+| `account`, `account_name`, `account_group` | from `accounts.csv` |
+| `cost_center`, `cost_center_name`, `department`, `pool_id` | from `cost_centers.csv` |
+| `cost_type` | `direct` or `indirect`, from the department (R3) |
+| `game_or_bucket` | the game (R4, R5), or the bucket for indirect costs (R8) |
+| `bearing_group` | the booked group for direct costs (R6); the bucket's mapping row for indirect costs (R9) |
+| `side` | `BR Games` or `US Games`; `By entity` is already resolved (R7, R9) |
+| `share` | the piece's share of the line; 1 when the line isn't split |
+| `amount_usd` | line amount × share, rounded to cents |
+| `status` | `allocated`, `unallocated` or `out_of_scope` |
+| `reason` | empty when allocated; otherwise one code from the table below |
+
+Lookup columns (names, `booked_group`, `department`, `pool_id`, `cost_type`, `account_group`) are filled whenever the
+lookup finds a match, whatever the status. `bearing_group` and `side` are filled only on allocated rows. For example,
+L00169 (cost center 3999) has no `cost_center_name`, `department`, `cost_type` or game.
+
+**Reasons.** The steps run in this order, and the first one that fails gives the reason. One code per Q1 case.
+
+| Code | Status | When |
+|---|---|---|
+| `zero_amount` | out_of_scope | amount is 0 (R1) |
+| `unknown_account` | unallocated | account not in `accounts.csv`, so the scope can't be decided |
+| `depreciation` | out_of_scope | account group is Depreciation (R1) |
+| `unknown_entity` | unallocated | entity not in `entities.csv` |
+| `unknown_cost_center` | unallocated | cost center not in `cost_centers.csv` (D1) |
+| `unknown_department` | unallocated | department not in R3 |
+| `bad_cost_center` | unallocated | a direct cost center has both a game and a pool, or neither |
+| `nothing_to_split` | unallocated | a pool has no game with FTE that month (R5), or the month has no employees (R8) |
+| `no_mapping_row` | unallocated | a game or bucket has no mapping row valid that month (R10, D3) |
+| `bad_mapping_row` | unallocated | a bucket row has a blank bearing group, or says By entity (Q5) |
+
+The last two apply to one piece, not to the whole line: the other pieces of the line are still allocated.
+
+### summary.csv
+
+One row per period × booked group: `period, booked_group, br_games, us_games, unallocated, total`. Period is `2026-01`,
+`2026-02`, `2026-03` or `2026-Q1`; the quarter is the sum of the months. `total` is the in-scope amount;
+out-of-scope lines are left out.
+The month and quarter labels in `summary.csv` and `reconciliation.csv` are built from the ledger's months, not
+written in the code.
+
+### reconciliation.csv
+
+One row per period: `period, ledger_total, out_of_scope, in_scope, allocated, unallocated, difference`, where
+`difference = ledger_total − out_of_scope − allocated − unallocated`, at full precision (Q7). This is where "every
+in-scope dollar" is accounted for. `in_scope` = `ledger_total` − `out_of_scope`, so lines with `unknown_account` count
+as in scope (unallocated).
+
+### checks.csv
+
+One row per check: `check, level, result, rows, amount_usd`. `result` is `pass`, `warn` or `fail`: `warn` means a
+`warn_` check found rows, and `fail` is used only for `block_` checks, so it always means the run stopped. `rows` and
+`amount_usd` describe the rows found; `amount_usd` is empty when the check is not about dollars (duplicate keys,
+overlapping mapping, months, trimmed values). `run.py` prints all rows found by `warn_trimmed_values` (Q8), and the
+first 10 rows found by any other check.
+
+| Check | Level | Fails when | From |
+|---|---|---|---|
+| `block_duplicate_keys` | block | an input table has duplicate keys at its grain | Q2 |
+| `block_overlapping_mapping` | block | two mapping rows are valid for the same game or bucket and month | Q3 |
+| `block_months_outside_quarter` | block | the ledger months are not the three months of one calendar quarter | Q9 |
+| `block_shares_not_one` | block | the shares of a line don't add up to 1 | R4, Notes |
+| `block_reconciliation` | block | `difference` is not under 0.005, or a summary `total` differs from `in_scope` | R1, R11 |
+| `block_allocated_rows_complete` | block | an allocated row has no game or bucket; has a side other than BR Games or US Games (so By entity never reaches the output); is a direct row whose bearing group isn't its booked group; is a pool piece whose game isn't in that pool; or is an indirect row with no bearing group | R5, R6, R7, R9 |
+| `warn_unallocated` | warn | any row is unallocated | Q1 |
+| `warn_trimmed_values` | warn | the cleaning step changed any value | Q8 |
+
+Dates are cast explicitly in the load step, so a date that isn't `yyyy-MM-dd` stops the run with an error.
+
+Expected on this data: every `block_` check passes; both `warn_` checks give `warn` (D1 and D3 for unallocated, D2
+for trimmed values).
