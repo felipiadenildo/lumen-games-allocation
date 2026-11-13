@@ -6,7 +6,9 @@ options with their trade-offs, reviews work against the BRIEF, drafts text or co
 request. Every number in the deliverables comes from code that ran.
 
 The prompts were drafted and refined in other AI tools before being pasted into the session, and edited by me on the
-way. They are collected in the [appendix](#appendix-prompts); the session transcript has exactly what was sent.
+way. They are collected in the [appendix](#appendix-prompts). The session transcript,
+[`ai-transcript.txt`](ai-transcript.txt), has exactly what was sent; it was exported after the reply to prompt 20, so the delivery
+steps after that (F7) are not in it.
 
 ## How a prompt worked
 
@@ -27,6 +29,7 @@ way. They are collected in the [appendix](#appendix-prompts); the session transc
 | F4 | 15, 16 | code review of steps 01 to 08 | `account_group` trimmed too; scope decided in one file; `bad_cost_center` written as two plain conditions | changing the implicit DECIMAL to DOUBLE: it matches D05; headcount instead of FTE: there is no headcount by game, so it is a question, not code; cost center 3999 in code: it is a data fix at the source | S07, S15 |
 | F4 | 17 | final review of the pipeline | old results cleared at the start of every run; the failed check named in the last line | — | S04, S17 |
 | F5 | 18, 19 | adversarial review: how could the numbers be wrong with every check passing? | a new block check for misspelled game names; the other reading of Q04 measured in the repo; cents and a wrong but valid mapping side stated as known limits | — | S11, S18 |
+| F6 | 20 | one review of every document against `output/` and the BRIEF | a notebook that could be saved broken, fixed; shares with one decimal so they add up to 100%; the Q04 impact stated in full; the cents figures given a source in notebook 04; plainer Tax note wording | guessing the repo root from the working directory: DuckDB's `file_search_path` instead; dropping the cents figures: shown in the notebook instead; month numbers in the Tax note: names read better for Tax | notebook 04 run from a fresh kernel |
 
 ## How AI output was checked
 
@@ -510,4 +513,27 @@ tell me only if something is wrong. Don't write anything.
 Left for F6, as you suggested: the cent differences (README, known limits), a wrong but valid mapping side as a
 stated limit (README), and the business partner questions (per entity, booked × bearing group, March, live_fi side),
 answered in a results notebook and the Tax note.
+````
+
+### Prompt 20 · One review of all the documents (F6)
+
+````text
+[V] The documents are written: `README.md`, `docs/tax-note.md`, `docs/design.md`, `docs/data-issues.md`,
+`docs/ai-usage.md` and `notebooks/04-results.ipynb`. Since your last review, the pipeline gained
+`output/summary_by_entity.csv`, and every ID was renamed (R01, Q01, D01, I01, C01, W01, S01; the old-to-new table is in
+`docs/ai-usage.md`). Review all of them in one pass. Run `python run.py` and any notebook you need; don't write any
+file.
+
+1. **Numbers.** Every figure in the README, the Tax note, data-issues.md and design.md matches `output/` or a notebook
+   output that runs. List each one that doesn't, with the file, the line and the right number.
+2. **Tax note.** One page, plain English for a non-technical reader, covering what BRIEF item 4 asks: results, issues
+   with their dollar impact, assumptions, what is needed from Tax. Flag jargon or anything a Tax reader would misread.
+3. **README.** Someone with only the README can run it from a clean checkout, find the outputs and the main design
+   choices (BRIEF item 5). Flag any step that would fail.
+4. **Consistency.** The same fact said two ways across documents; an ID cited that doesn't exist or points to the wrong
+   thing; a link or anchor that breaks; a statement that the code no longer matches (five output files, nine checks).
+5. **BRIEF checklist.** Anything the BRIEF asks for that is missing or only implied.
+
+Give me a short list, most important first, then only the needed fixes as a diff, and wait for my ok before writing.
+Don't add sections, charts, checks or files; don't change `output/` or `data/`.
 ````

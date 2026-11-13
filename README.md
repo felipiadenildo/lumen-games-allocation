@@ -7,7 +7,8 @@ in [`BRIEF.md`](BRIEF.md).
 ## Results
 
 Of the 6,539,250.85 USD in scope, BR Games bears 4,642,414.76 USD (71.0%) and US Games 1,864,780.12 USD (28.5%);
-32,055.97 USD (0.5%) is not on a side yet, pending two answers from Tax. The ledger reconciles to the cent in every month.
+32,055.97 USD (0.5%) is not on a side yet, pending two answers from Tax. The ledger reconciles to the cent in every
+month.
 
 ![Who bears the quarter's cost, by booked group](docs/img/quarter-by-booked-group.png)
 
@@ -100,7 +101,7 @@ decisions, ...) are explained in its [IDs](docs/design.md#ids) section.
 | F4 Build | eleven SQL steps, nine checks, `run.py`, `output/` | `sql/`, `run.py` |
 | F5 Validate | worked examples vs output, dollar impact of each issue, scenarios S01–S18, adversarial review | `notebooks/02`, `notebooks/03`, `docs/data-issues.md` |
 | F6 Communicate | data model and pipeline sections, IDs, summary by entity, results notebook, Tax note, README, AI log | `docs/`, `notebooks/04-results.ipynb` |
-| F7 Deliver | clean-checkout test, AI session transcript, zip with `.git` | the delivered zip |
+| F7 Deliver | clean-checkout test, AI session transcript, zip with `.git` | `docs/ai-transcript.txt`, the delivered zip |
 
 AI use, what was kept and what was rejected: [`docs/ai-usage.md`](docs/ai-usage.md).
 
@@ -117,6 +118,7 @@ notebooks/          exploration, worked examples, scenarios, results (not used b
 docs/design.md      rules, data model, open questions, decisions, output, pipeline, validation
 docs/data-issues.md the issues found in the inputs, with their dollar impact
 docs/tax-note.md    the one-page note to the Tax team
-docs/ai-usage.md    how AI was used
+docs/ai-usage.md    how AI was used, with every prompt
+docs/ai-transcript.txt  the AI session, as exported
 docs/img/           charts written by notebooks/04-results.ipynb
 ```
