@@ -1,5 +1,11 @@
--- Trim the name columns used to match tables (Q08, D08).
--- First keep every value that will change, then change it.
+-- Step 02 · Clean
+-- What:   removes spaces at the start and end of the name columns that are used to match tables (Q08, D08).
+-- Why:    game_mapping has 'Star Racer ' (I02). Without the trim it matches no cost center, pool or headcount row,
+--         and 753,920.16 USD of Star Racer pieces would have no side.
+-- How:    first keep every value that will change (before/after) in trimmed_values, then UPDATE the tables.
+--         warn_trimmed_values reports the log, so no value changes silently.
+-- Only these columns: game names, pool ids, departments, categories, entity groups, account groups.
+-- Reads:  the 8 input tables    Writes: trimmed_values; updates the input tables in place
 
 CREATE OR REPLACE TABLE trimmed_values AS
 SELECT 'game_mapping' AS table_name, 'game_group' AS column_name, game_group AS before, trim(game_group) AS after
@@ -23,6 +29,7 @@ SELECT 'entities', 'entity_group', entity_group, trim(entity_group) FROM entitie
 UNION ALL
 SELECT 'accounts', 'account_group', account_group, trim(account_group) FROM accounts WHERE account_group <> trim(account_group);
 
+-- Now change the values, the same columns as logged above.
 UPDATE game_mapping SET game_group = trim(game_group);
 UPDATE cost_centers SET game = trim(game), pool_id = trim(pool_id), department = trim(department);
 UPDATE pools SET pool_id = trim(pool_id), game = trim(game);

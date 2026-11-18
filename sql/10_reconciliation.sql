@@ -1,5 +1,8 @@
--- Where every ledger dollar went, for each month and for the quarter (R11).
--- The ledger total comes from the ledger itself, not from the allocation table.
+-- Step 10 · Reconciliation: where every ledger dollar went (R01, R11)
+-- ledger_total = out_of_scope + allocated + unallocated, per month and for the quarter.
+-- The ledger total is read from the ledger itself, not from the allocation table, so a lost or doubled
+-- row shows as a difference. block_reconciliation fails if any |difference| >= 0.005.
+-- Reads:  ledger, allocation      Writes: reconciliation
 
 CREATE OR REPLACE TABLE reconciliation AS
 WITH ledger_by_month AS (
@@ -44,6 +47,7 @@ with_quarter AS (
         SUM(unallocated)
     FROM by_month
 )
+-- difference must be 0.00: checked by block_reconciliation (Q07 tolerance 0.005).
 SELECT
     *,
     ledger_total - out_of_scope - allocated - unallocated AS difference

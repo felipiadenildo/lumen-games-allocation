@@ -1,5 +1,7 @@
 # Lumen Games: Q1 2026 cost allocation
 
+> **Take-home case** for a Data Engineer hiring process at a games company (November 2026). Lumen Games and all the data are fictional; the problem statement is in [`BRIEF.md`](BRIEF.md). Diagrams: [`docs/diagrams/`](docs/diagrams/).
+
 A DuckDB SQL pipeline that puts every in-scope ledger cost of the quarter on a side, BR Games or US Games, by booked
 entity and month, with checks that stop the run when a number would be wrong. Written for the Tax team; the problem is
 in [`BRIEF.md`](BRIEF.md).

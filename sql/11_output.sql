@@ -1,5 +1,9 @@
--- The result files as they are written: amounts rounded to cents only here (Q07, D05),
--- rows always in the same order. run.py copies these tables to output/ when no block_ check fails.
+-- Step 11 · Output tables
+-- The only place amounts are rounded to cents (Q07, D05): until here every piece keeps full precision.
+-- Rows are always in the same order, so a rerun gives an identical file (easy to diff).
+-- run.py copies output_* to output/*.csv only when no block_ check fails (D04).
+-- Reads:  allocation, summary, summary_by_entity, reconciliation      Writes: output_allocation, output_summary,
+--                                                                             output_summary_by_entity, output_reconciliation
 
 CREATE OR REPLACE TABLE output_allocation AS
 SELECT

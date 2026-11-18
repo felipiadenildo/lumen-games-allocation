@@ -1,7 +1,11 @@
--- Amount by booked entity x side and by booked group x side, for each month and for the quarter (R11).
--- Out-of-scope lines are left out; unallocated dollars get their own column.
--- The BRIEF asks for booked groups (summary); Tax also needs each entity (summary_by_entity).
+-- Step 09 · Summaries: amount by booked entity / booked group x side, per month and quarter (R11)
+-- What:   in-scope rows only. br_games and us_games add the allocated rows of each side;
+--         unallocated has its own column, so total = everything in scope.
+-- summary_by_entity: month x booked entity (what Tax reads). summary: the same added up by booked group (BRIEF item 2).
+-- The quarter row is the sum of the months; its label (2026-Q1) is computed from the ledger months.
+-- Reads:  allocation, ledger      Writes: summary_by_entity, summary
 
+-- FILTER (WHERE ...) adds only the rows that pass the condition; coalesce turns 'no rows' into 0.
 CREATE OR REPLACE TABLE summary_by_entity AS
 WITH by_month AS (
     SELECT

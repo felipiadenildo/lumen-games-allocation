@@ -1,7 +1,12 @@
--- The allocation table: every ledger line, one row per piece (D03).
--- A line with no piece (out of scope, or stopped before the split) has one row with share 1.
+-- Step 08 · The allocation table: every ledger line, one row per piece (D03, D09, D11)
+-- Part 1: lines that were split -> one row per piece, amount = line amount x share,
+--         status allocated, or unallocated with the piece's reason.
+-- Part 2: lines with no piece -> one row, share 1, status out_of_scope or unallocated with the line's reason.
+-- So every ledger dollar is in exactly one place, and the shares of each line add up to 1 (block_shares_not_one).
+-- Reads:  lines, pieces_mapped, pieces      Writes: allocation
 
 CREATE OR REPLACE TABLE allocation AS
+-- Part 1: one row per piece of the lines that were split.
 SELECT
     l.line_id,
     l.month,
@@ -26,6 +31,7 @@ SELECT
 FROM lines l
 JOIN pieces_mapped p ON p.line_id = l.line_id
 
+-- Part 2: lines that got no piece at all.
 UNION ALL
 
 SELECT

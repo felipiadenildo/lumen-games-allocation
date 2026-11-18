@@ -1,8 +1,15 @@
--- Indirect cost: split across buckets by each bucket's share of the month's employees,
--- all entities and both categories (R08, Q04).
--- Bucket = first word of the category + entity group, in lower case (live_br, new_fi, ...).
--- An employee whose entity is missing goes to live_unknown or new_unknown (D10).
+-- Step 06 · Indirect cost: buckets of employees (R08, Q04, D10)
+-- What:   an indirect line (Engineering, Marketing, People, Operations) is split across buckets,
+--         by each bucket's share of ALL the company's employees that month (Q04: whole company).
+-- Bucket: first word of the employee's category + '_' + the entity group of the employee's entity, lower case.
+--         'Live Games' + LGB (group BR) -> live_br;  'New Games' + LGF (group FI) -> new_fi.
+-- Why both parts: the mapping gives each bucket its own bearing group and side (live_others -> BR, new_others -> US),
+--         so neither the category nor the group alone decides the side.
+-- Example W03: L00444, February, Finance, 21,346.02 USD, 123 employees -> 5 pieces (live_br 71/123, ...).
+-- Reads:  headcount_employees, entities, lines      Writes: employee_buckets, bucket_shares, pieces_indirect
 
+-- employee_buckets: one row per employee and month, with the bucket name.
+-- LEFT JOIN + coalesce: an employee with an unknown entity stays counted, in *_unknown (D10).
 CREATE OR REPLACE TABLE employee_buckets AS
 SELECT
     h.month,
@@ -10,6 +17,7 @@ SELECT
 FROM headcount_employees h
 LEFT JOIN entities e ON e.entity = h.entity;
 
+-- bucket_shares: employees in the bucket / all employees that month. Shares add up to 1 each month.
 CREATE OR REPLACE TABLE bucket_shares AS
 SELECT
     month,
@@ -18,6 +26,8 @@ SELECT
 FROM employee_buckets
 GROUP BY month, bucket;
 
+-- pieces_indirect: every indirect line gets one piece per bucket of its month.
+-- Q04's other reading (only the booking group's employees) would add the group to the join; see live.ipynb, M06.
 CREATE OR REPLACE TABLE pieces_indirect AS
 SELECT
     l.line_id,

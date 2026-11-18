@@ -1,6 +1,15 @@
--- Bearing group and side of each piece, from the mapping row valid that month (R06, R07, R09, R10).
--- A piece with no valid mapping row, or a bad bucket row, stays unallocated (Q01, Q05).
+-- Step 07 · Bearing group and side of every piece (R06, R07, R09, R10)
+-- What:   each piece (game or bucket) looks up its row in game_mapping valid that month.
+--         Valid = the month's first day is between start_date and end_date, both inclusive (R10).
+-- Direct piece:   bearing group = booked group, the cost never changes entity (R06);
+--                 side = the row's side; 'By entity' -> BR Games if booked by LGB, else US Games (R07, W04).
+-- Indirect piece: bearing group and side both come from the bucket row (R09); this is where a cost
+--                 booked by one group can be borne by another (W03: LGB pays, new_fi -> FI, US Games).
+-- A piece with no valid row (live_fi in March, I03) or a bad bucket row stays unallocated,
+-- only that piece; the line's other pieces are allocated (Q01, Q05, D09).
+-- Reads:  pieces_game, pieces_pool, pieces_indirect, lines, game_mapping      Writes: pieces, pieces_mapped
 
+-- pieces: the three kinds of piece in one table (same columns: line_id, game_or_bucket, share).
 CREATE OR REPLACE TABLE pieces AS
 SELECT * FROM pieces_game
 UNION ALL
@@ -8,6 +17,7 @@ SELECT * FROM pieces_pool
 UNION ALL
 SELECT * FROM pieces_indirect;
 
+-- pieces_mapped: each piece with the line's cost type and booked entity/group, and its mapping row.
 CREATE OR REPLACE TABLE pieces_mapped AS
 WITH matched AS (
     SELECT
@@ -27,6 +37,8 @@ WITH matched AS (
         ON m.game_group = p.game_or_bucket
        AND CAST(l.month || '-01' AS DATE) BETWEEN m.start_date AND m.end_date
 )
+-- reason: no_mapping_row (no row valid that month) or bad_mapping_row (a bucket row with a blank
+-- bearing group or By entity, Q05). NULL = the piece is allocated.
 SELECT
     line_id,
     game_or_bucket,

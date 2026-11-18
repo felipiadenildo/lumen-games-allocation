@@ -1,7 +1,14 @@
--- One row per ledger line, with its lookups, its cost type (R02, R03)
--- and the reason when the line stops before it is split (R01, Q01).
+-- Step 03 · Lines: one row per ledger line, with everything the next steps need
+-- What:   joins each ledger line to its entity, account and cost center, decides its cost type,
+--         and gives a reason when the line stops here (it is never split).
+-- Rules:  R01 scope (zero amount, Depreciation), R02 booked group = the entity's entity_group,
+--         R03 cost type from the department, Q01 unknown codes stay visible as unallocated.
+-- Why LEFT JOIN: a line whose entity, account or cost center is missing must not disappear;
+--         it stays with a reason (unknown_cost_center for L00169, I01).
+-- Reads:  ledger, entities, accounts, cost_centers     Writes: lines
 
 CREATE OR REPLACE TABLE lines AS
+-- joined: the ledger line with its lookups. The *_found flags say which lookup failed.
 WITH joined AS (
     SELECT
         l.line_id,
@@ -16,6 +23,7 @@ WITH joined AS (
         c.department,
         c.pool_id,
         c.game,
+        -- R03: the department decides the path. Any other department -> NULL -> unknown_department below.
         CASE
             WHEN c.department IN ('Live Games', 'New Games') THEN 'direct'
             WHEN c.department IN ('Engineering', 'Marketing', 'People', 'Operations') THEN 'indirect'
@@ -29,6 +37,8 @@ WITH joined AS (
     LEFT JOIN accounts a ON a.account = l.account
     LEFT JOIN cost_centers c ON c.cost_center = l.cost_center
 ),
+-- with_reason: the first check that fails gives the reason; NULL = the line goes on to be split.
+-- The order matters: scope first (R01), then the lookups, then the cost center's shape (Q01).
 with_reason AS (
     SELECT
         * EXCLUDE (account_found, entity_found, cost_center_found),
